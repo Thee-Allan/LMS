@@ -16,21 +16,33 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeModule, setActiveModule, collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
-  const { user, hasPermission, hasAnyPermission, logout } = useAuth();
+  const { user, hasPermission, logout } = useAuth();
+  const isClient = user?.role === 'client';
 
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, perm: 'dashboard.view' },
-    { id: 'clients', label: 'Clients', icon: Users, perm: 'clients.view' },
-    { id: 'matters', label: 'Matters/Cases', icon: Briefcase, perm: 'matters.view' },
-    { id: 'tasks', label: 'Tasks', icon: CheckSquare, perm: 'tasks.view' },
-    { id: 'calendar', label: 'Calendar', icon: Calendar, perm: 'calendar.view' },
-    { id: 'documents', label: 'Documents', icon: FileText, perm: 'documents.view' },
-    { id: 'time', label: 'Time Tracking', icon: Clock, perm: 'time.view' },
-    { id: 'billing', label: 'Billing', icon: Receipt, perm: 'billing.view' },
-    { id: 'reports', label: 'Reports', icon: BarChart3, perm: 'reports.view' },
-    { id: 'users', label: 'Users', icon: Shield, perm: 'users.view' },
-    { id: 'settings', label: 'Settings', icon: Settings, perm: 'settings.view' },
-  ].filter(item => hasPermission(item.perm));
+  // Clients get a simplified 4-item menu
+  const clientMenuItems = [
+    { id: 'dashboard',  label: 'Dashboard',      icon: LayoutDashboard, perm: 'dashboard.view' },
+    { id: 'matters',    label: 'Matters/Cases',  icon: Briefcase,       perm: 'matters.view'   },
+    { id: 'documents',  label: 'Documents',      icon: FileText,        perm: 'documents.view' },
+    { id: 'billing',    label: 'Billing',        icon: Receipt,         perm: 'billing.view'   },
+  ];
+
+  // Admin / Staff get the full menu
+  const adminMenuItems = [
+    { id: 'dashboard', label: 'Dashboard',     icon: LayoutDashboard, perm: 'dashboard.view' },
+    { id: 'clients',   label: 'Clients',       icon: Users,           perm: 'clients.view'   },
+    { id: 'matters',   label: 'Matters/Cases', icon: Briefcase,       perm: 'matters.view'   },
+    { id: 'tasks',     label: 'Tasks',         icon: CheckSquare,     perm: 'tasks.view'     },
+    { id: 'calendar',  label: 'Calendar',      icon: Calendar,        perm: 'calendar.view'  },
+    { id: 'documents', label: 'Documents',     icon: FileText,        perm: 'documents.view' },
+    { id: 'time',      label: 'Time Tracking', icon: Clock,           perm: 'time.view'      },
+    { id: 'billing',   label: 'Billing',       icon: Receipt,         perm: 'billing.view'   },
+    { id: 'reports',   label: 'Reports',       icon: BarChart3,       perm: 'reports.view'   },
+    { id: 'users',     label: 'Users',         icon: Shield,          perm: 'users.view'     },
+    { id: 'settings',  label: 'Settings',      icon: Settings,        perm: 'settings.view'  },
+  ];
+
+  const menuItems = (isClient ? clientMenuItems : adminMenuItems).filter(item => hasPermission(item.perm));
 
   const handleNav = (id: string) => {
     setActiveModule(id);
@@ -38,13 +50,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeModule, setActiveModule, collap
   };
 
   const roleColors: Record<string, string> = {
-    super_admin: '#ef4444',
+    super_admin:      '#ef4444',
     managing_partner: '#8b5cf6',
-    advocate: '#3b82f6',
-    paralegal: '#10b981',
-    accountant: '#f59e0b',
-    reception: '#ec4899',
-    client: '#06b6d4',
+    advocate:         '#3b82f6',
+    paralegal:        '#10b981',
+    accountant:       '#f59e0b',
+    reception:        '#ec4899',
+    client:           '#06b6d4',
   };
 
   return (
@@ -105,7 +117,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeModule, setActiveModule, collap
           })}
         </nav>
 
-        {/* User Profile */}
+        {/* User Profile + Logout */}
         <div className={`p-4 border-t border-[var(--border-color)] ${collapsed ? 'px-2' : ''}`}>
           {!collapsed && user && (
             <div className="flex items-center gap-3 mb-3">
@@ -115,7 +127,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeModule, setActiveModule, collap
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-[var(--text-primary)] truncate">{user.name}</p>
-                <p className="text-xs text-[var(--text-secondary)] truncate">{user.title}</p>
+                <p className="text-xs text-[var(--text-secondary)] truncate capitalize">{isClient ? 'Client' : user.title}</p>
               </div>
             </div>
           )}

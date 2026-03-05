@@ -2,9 +2,11 @@ import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { clients as initialClients, Client } from '@/data/mockData';
 import { Plus, Search, Filter, Edit2, Trash2, Eye, X, Building2, User, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import AdminActions from './AdminActions';
 
 const ClientsModule: React.FC = () => {
-  const { hasPermission, addAuditLog } = useAuth();
+  const { user, hasPermission, addAuditLog } = useAuth();
+  const isClient = user?.role === 'client';
   const [clientsList, setClientsList] = useState<Client[]>(initialClients);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -154,19 +156,23 @@ const ClientsModule: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => setViewingClient(c)} className="p-1.5 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-blue-400" title="View">
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      {hasPermission('clients.edit') && (
-                        <button onClick={() => openEdit(c)} className="p-1.5 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-yellow-400" title="Edit">
-                          <Edit2 className="w-4 h-4" />
+                    <div className="flex items-center justify-end">
+                      {isClient ? (
+                        <button onClick={() => setViewingClient(c)} className="p-1.5 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-blue-400" title="View">
+                          <Eye className="w-4 h-4" />
                         </button>
-                      )}
-                      {hasPermission('clients.delete') && (
-                        <button onClick={() => handleDelete(c)} className="p-1.5 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-red-400" title="Delete">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      ) : (
+                        <AdminActions
+                          label="Client"
+                          onView={() => setViewingClient(c)}
+                          onEdit={hasPermission('clients.edit') ? () => openEdit(c) : undefined}
+                          onDelete={hasPermission('clients.delete') ? () => handleDelete(c) : undefined}
+                          onExport={hasPermission('clients.export') ? () => {
+                            const row = `"${c.name}","${c.email}","${c.phone}","${c.type}","${c.status}"`;
+                            const blob = new Blob([`Name,Email,Phone,Type,Status\n${row}`], { type: 'text/csv' });
+                            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${c.name.replace(/\s+/g,'-')}.csv`; a.click();
+                          } : undefined}
+                        />
                       )}
                     </div>
                   </td>

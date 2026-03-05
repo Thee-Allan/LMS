@@ -2,13 +2,15 @@ import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { matters as initialMatters, Matter, practiceAreas, courts, clients } from '@/data/mockData';
 import { Plus, Search, Edit2, Trash2, Eye, X, Download, ChevronLeft, ChevronRight, Briefcase, AlertCircle } from 'lucide-react';
+import AdminActions from './AdminActions';
 
 const statusColors: Record<string, string> = {
   consultation: '#6b7280', active: '#3b82f6', court: '#ef4444', settled: '#10b981', closed: '#8b5cf6', archived: '#9ca3af',
 };
 
 const MattersModule: React.FC = () => {
-  const { hasPermission, addAuditLog, allUsers } = useAuth();
+  const { user, hasPermission, addAuditLog, allUsers } = useAuth();
+  const isClient = user?.role === 'client';
   const [mattersList, setMattersList] = useState<Matter[]>(initialMatters);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -173,10 +175,33 @@ const MattersModule: React.FC = () => {
                     {m.nextHearing ? new Date(m.nextHearing).toLocaleDateString('en-KE', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => setViewingMatter(m)} className="p-1.5 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-blue-400"><Eye className="w-4 h-4" /></button>
-                      {hasPermission('matters.edit') && <button onClick={() => openEdit(m)} className="p-1.5 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-yellow-400"><Edit2 className="w-4 h-4" /></button>}
-                      {hasPermission('matters.delete') && <button onClick={() => handleDelete(m)} className="p-1.5 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-red-400"><Trash2 className="w-4 h-4" /></button>}
+                    <div className="flex items-center justify-end">
+                      {isClient ? (
+                        // Clients: plain view button only
+                        <button onClick={() => setViewingMatter(m)} className="p-1.5 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-blue-400" title="View Matter">
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        // Admins / Advocates / Partners: rich action menu
+                        <AdminActions
+                          label="Matter"
+                          onView={() => setViewingMatter(m)}
+                          onEdit={hasPermission('matters.edit') ? () => openEdit(m) : undefined}
+                          onDelete={hasPermission('matters.delete') ? () => handleDelete(m) : undefined}
+                          onExport={hasPermission('matters.export') ? () => {
+                            const row = `"${m.matterNumber}","${m.title}","${m.clientName}","${m.practiceArea}","${m.status}","${m.assignedAdvocate}","${m.court}","${m.value}"`;
+                            const blob = new Blob([`Matter Number,Title,Client,Practice Area,Status,Advocate,Court,Value\n${row}`], { type: 'text/csv' });
+                            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${m.matterNumber}.csv`; a.click();
+                          } : undefined}
+                          onChangeStatus={hasPermission('matters.edit') ? () => {
+                            const next: Record<string, string> = { consultation: 'active', active: 'court', court: 'settled', settled: 'closed', closed: 'archived', archived: 'closed' };
+                            if (confirm(`Change status from "${m.status}" → "${next[m.status]}"?`)) {
+                              setMattersList(prev => prev.map(x => x.id === m.id ? { ...x, status: next[m.status] as Matter['status'] } : x));
+                            }
+                          } : undefined}
+                          onPrint={() => window.print()}
+                        />
+                      )}
                     </div>
                   </td>
                 </tr>
