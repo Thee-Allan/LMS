@@ -8,8 +8,20 @@ const statusColors: Record<string, string> = {
 };
 
 const BillingModule: React.FC = () => {
-  const { hasPermission, addAuditLog } = useAuth();
-  const [invoicesList, setInvoicesList] = useState<Invoice[]>(initialInvoices);
+  const { user, hasPermission, addAuditLog } = useAuth();
+  const isClient = user?.role === 'client';
+
+  // Clients only see their own invoices.
+  // We match by the client's first name as a proxy (in production, match by clientId).
+  const baseInvoices = isClient
+    ? initialInvoices.filter(i =>
+        i.clientName.toLowerCase().includes(
+          user?.name?.split(' ')[0]?.toLowerCase() ?? ''
+        )
+      )
+    : initialInvoices;
+
+  const [invoicesList, setInvoicesList] = useState<Invoice[]>(baseInvoices);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showForm, setShowForm] = useState(false);
@@ -91,16 +103,18 @@ const BillingModule: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Billing & Invoicing</h1>
-          <p className="text-sm text-[var(--text-secondary)]">{filtered.length} invoices</p>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+            {isClient ? 'My Invoices' : 'Billing & Invoicing'}
+          </h1>
+          <p className="text-sm text-[var(--text-secondary)]">{filtered.length} invoice{filtered.length !== 1 ? 's' : ''}</p>
         </div>
         <div className="flex items-center gap-2">
-          {hasPermission('billing.export') && (
+          {!isClient && hasPermission('billing.export') && (
             <button onClick={exportCSV} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] text-sm">
               <Download className="w-4 h-4" /> Export
             </button>
           )}
-          {hasPermission('billing.create') && (
+          {!isClient && hasPermission('billing.create') && (
             <button onClick={() => { setForm({ matterId: '', clientId: '', dueDate: '', items: [{ description: '', hours: 0, rate: 0, amount: 0 }], tax: 16, discount: 0 }); setShowForm(true); }}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium">
               <Plus className="w-4 h-4" /> New Invoice
@@ -112,8 +126,8 @@ const BillingModule: React.FC = () => {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: 'Total Revenue', value: totalRevenue, icon: CheckCircle2, color: '#10b981' },
-          { label: 'Outstanding', value: totalOutstanding, icon: Clock, color: '#f59e0b' },
+          { label: isClient ? 'Total Paid' : 'Total Revenue', value: totalRevenue, icon: CheckCircle2, color: '#10b981' },
+          { label: isClient ? 'Amount Due' : 'Outstanding', value: totalOutstanding, icon: Clock, color: '#f59e0b' },
           { label: 'Overdue', value: totalOverdue, icon: AlertTriangle, color: '#ef4444' },
         ].map((s, i) => {
           const Icon = s.icon;
@@ -152,7 +166,7 @@ const BillingModule: React.FC = () => {
             <thead>
               <tr className="border-b border-[var(--border-color)]">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase">Invoice</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase hidden md:table-cell">Client</th>
+                {!isClient && <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase hidden md:table-cell">Client</th>}
                 <th className="text-right px-4 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase">Amount</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase hidden md:table-cell">Paid</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase">Status</th>
@@ -167,7 +181,7 @@ const BillingModule: React.FC = () => {
                     <p className="text-sm font-medium text-[var(--text-primary)]">{inv.invoiceNumber}</p>
                     <p className="text-xs text-[var(--text-secondary)]">{inv.matterNumber}</p>
                   </td>
-                  <td className="px-4 py-3 hidden md:table-cell text-sm text-[var(--text-primary)]">{inv.clientName}</td>
+                  {!isClient && <td className="px-4 py-3 hidden md:table-cell text-sm text-[var(--text-primary)]">{inv.clientName}</td>}
                   <td className="px-4 py-3 text-right text-sm font-medium text-[var(--text-primary)]">KES {inv.amount.toLocaleString()}</td>
                   <td className="px-4 py-3 text-right hidden md:table-cell text-sm text-[var(--text-secondary)]">KES {inv.paid.toLocaleString()}</td>
                   <td className="px-4 py-3">
@@ -177,10 +191,10 @@ const BillingModule: React.FC = () => {
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
                       <button onClick={() => setViewingInvoice(inv)} className="p-1.5 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-blue-400"><Eye className="w-4 h-4" /></button>
-                      {inv.status === 'draft' && hasPermission('billing.edit') && (
+                      {!isClient && inv.status === 'draft' && hasPermission('billing.edit') && (
                         <button onClick={() => markAsSent(inv)} className="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700">Send</button>
                       )}
-                      {['sent', 'partial', 'overdue'].includes(inv.status) && hasPermission('billing.edit') && (
+                      {!isClient && ['sent', 'partial', 'overdue'].includes(inv.status) && hasPermission('billing.edit') && (
                         <button onClick={() => recordPayment(inv)} className="text-xs px-2 py-1 rounded bg-green-600 text-white hover:bg-green-700">Pay</button>
                       )}
                     </div>
