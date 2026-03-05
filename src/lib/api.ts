@@ -1,7 +1,7 @@
 // Nanyuki Law Firm - API Client
 // Replaces Supabase with direct calls to our Express/MySQL backend
 
-const BASE = 'http://localhost:4000/api';
+const BASE = 'https://lms-loxl.onrender.com/api';
 
 function getToken() {
   return localStorage.getItem('nlf_token');

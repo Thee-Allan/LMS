@@ -38,7 +38,7 @@ const MercyChat: React.FC<MercyChatProps> = ({ isOpen, onClose }) => {
 
     try {
       const history = messages.slice(-10).map(m => ({ role: m.role, content: m.content }));
-      const resp = await fetch('http://localhost:4000/api/mercy-chat', {
+      const resp = await fetch('https://lms-loxl.onrender.com/api/mercy-chat', {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('nlf_token')}` },
         body: JSON.stringify({ message: userMessage, history }),
       });
