@@ -41,11 +41,11 @@ app.use((err, req, res, next) => {
 
 // ── Database Pool ─────────────────────────────────────────────
 const pool = mysql.createPool({
-  host:     'localhost',
-  port:     3306,
-  user:     'root',
-  password: 'Allan254',
-  database: 'nanyuki_law_firm',
+  host:     process.env.DB_HOST || 'localhost',
+  port:     process.env.DB_PORT || 3306,
+  user:     process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || 'Allan254',
+  database: process.env.DB_NAME || 'nanyuki_law_firm',
 });
 
 // ── Document Upload Setup ─────────────────────────────────────
@@ -509,8 +509,6 @@ app.get('/api/documents/:id/download', auth, async (req, res) => {
     }
 
     const document = rows[0];
-    // In a real implementation, you would serve the actual file from the uploads directory
-    // For now, we'll return a placeholder response
     res.json({
       message: 'Document download endpoint ready',
       document: {
@@ -674,7 +672,6 @@ app.put('/api/users/:id', auth, async (req, res) => {
 // ============================================================
 
 app.get('/api/firms', auth, async (req, res) => {
-  // Only super admin can access all firms
   if (req.user.role !== 'super_admin') {
     return res.status(403).json({ error: 'Access denied' });
   }
@@ -683,11 +680,9 @@ app.get('/api/firms', auth, async (req, res) => {
 });
 
 app.get('/api/firms/:id', auth, async (req, res) => {
-  // Only super admin or firm admin can access
   if (req.user.role !== 'super_admin') {
     const [rows] = await pool.execute('SELECT * FROM firms WHERE id = ?', [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Firm not found' });
-    // Check if user belongs to this firm
     const [userRows] = await pool.execute('SELECT id FROM users WHERE id = ? AND firm_id = ?', [req.user.id, req.params.id]);
     if (!userRows.length && req.user.role !== 'super_admin') {
       return res.status(403).json({ error: 'Access denied' });
@@ -699,69 +694,51 @@ app.get('/api/firms/:id', auth, async (req, res) => {
 });
 
 app.post('/api/firms', auth, async (req, res) => {
-  // Only super admin can create firms
   if (req.user.role !== 'super_admin') {
     return res.status(403).json({ error: 'Access denied' });
   }
-  
   const { name, email, phone, address, currency, timezone } = req.body;
   const id = `firm_${uuidv4().replace(/-/g,'').slice(0,8)}`;
-  
   await pool.execute(
     'INSERT INTO firms (id, name, email, phone, address, currency, timezone) VALUES (?,?,?,?,?,?,?)',
     [id, name, email, phone, address, currency || 'KES', timezone || 'Africa/Nairobi']
   );
-  
   await logAudit(req.user.id, req.user.name, 'CREATE', 'Firms', `Created firm: ${name}`);
   res.json({ id, message: 'Firm created successfully' });
 });
 
 app.put('/api/firms/:id', auth, async (req, res) => {
-  // Only super admin or firm admin can update
   if (req.user.role !== 'super_admin') {
     const [userRows] = await pool.execute('SELECT id FROM users WHERE id = ? AND firm_id = ?', [req.user.id, req.params.id]);
-    if (!userRows.length && req.user.role !== 'super_admin') {
-      return res.status(403).json({ error: 'Access denied' });
-    }
+    if (!userRows.length) return res.status(403).json({ error: 'Access denied' });
   }
-  
   const { name, email, phone, address, currency, timezone } = req.body;
   await pool.execute(
     'UPDATE firms SET name=?, email=?, phone=?, address=?, currency=?, timezone=? WHERE id=?',
     [name, email, phone, address, currency, timezone, req.params.id]
   );
-  
   await logAudit(req.user.id, req.user.name, 'UPDATE', 'Firms', `Updated firm: ${name}`);
   res.json({ success: true });
 });
 
 // ============================================================
-// PLANS (Subscription Plans)
+// PLANS
 // ============================================================
 
 app.get('/api/plans', auth, async (req, res) => {
-  // Only super admin can manage plans
-  if (req.user.role !== 'super_admin') {
-    return res.status(403).json({ error: 'Access denied' });
-  }
+  if (req.user.role !== 'super_admin') return res.status(403).json({ error: 'Access denied' });
   const [rows] = await pool.execute('SELECT * FROM plans WHERE is_active = 1 ORDER BY price_monthly ASC');
   res.json(rows);
 });
 
 app.post('/api/plans', auth, async (req, res) => {
-  // Only super admin can create plans
-  if (req.user.role !== 'super_admin') {
-    return res.status(403).json({ error: 'Access denied' });
-  }
-  
+  if (req.user.role !== 'super_admin') return res.status(403).json({ error: 'Access denied' });
   const { name, description, price_monthly, price_annually, currency, features, limits } = req.body;
   const id = `plan_${uuidv4().replace(/-/g,'').slice(0,8)}`;
-  
   await pool.execute(
     'INSERT INTO plans (id, name, description, price_monthly, price_annually, currency, features, limits) VALUES (?,?,?,?,?,?,?,?)',
     [id, name, description, price_monthly || 0, price_annually || 0, currency || 'KES', JSON.stringify(features || []), JSON.stringify(limits || {})]
   );
-  
   await logAudit(req.user.id, req.user.name, 'CREATE', 'Plans', `Created plan: ${name}`);
   res.json({ id, message: 'Plan created successfully' });
 });
@@ -771,10 +748,7 @@ app.post('/api/plans', auth, async (req, res) => {
 // ============================================================
 
 app.get('/api/subscriptions', auth, async (req, res) => {
-  // Only super admin can access all subscriptions
-  if (req.user.role !== 'super_admin') {
-    return res.status(403).json({ error: 'Access denied' });
-  }
+  if (req.user.role !== 'super_admin') return res.status(403).json({ error: 'Access denied' });
   const [rows] = await pool.execute(`
     SELECT s.*, f.name as firm_name, p.name as plan_name 
     FROM subscriptions s 
@@ -786,12 +760,8 @@ app.get('/api/subscriptions', auth, async (req, res) => {
 });
 
 app.get('/api/firms/:id/subscription', auth, async (req, res) => {
-  // Check if user belongs to this firm
   const [userRows] = await pool.execute('SELECT id FROM users WHERE id = ? AND firm_id = ?', [req.user.id, req.params.id]);
-  if (!userRows.length && req.user.role !== 'super_admin') {
-    return res.status(403).json({ error: 'Access denied' });
-  }
-  
+  if (!userRows.length && req.user.role !== 'super_admin') return res.status(403).json({ error: 'Access denied' });
   const [rows] = await pool.execute(`
     SELECT s.*, f.name as firm_name, p.name as plan_name, p.features, p.limits
     FROM subscriptions s 
@@ -800,33 +770,22 @@ app.get('/api/firms/:id/subscription', auth, async (req, res) => {
     WHERE s.firm_id = ? AND s.status IN ('trialing', 'active')
     ORDER BY s.created_at DESC LIMIT 1
   `, [req.params.id]);
-  
   if (!rows.length) return res.status(404).json({ error: 'No active subscription found' });
   res.json(rows[0]);
 });
 
 app.post('/api/firms/:id/subscription', auth, async (req, res) => {
-  // Check if user belongs to this firm
   const [userRows] = await pool.execute('SELECT id FROM users WHERE id = ? AND firm_id = ?', [req.user.id, req.params.id]);
-  if (!userRows.length && req.user.role !== 'super_admin') {
-    return res.status(403).json({ error: 'Access denied' });
-  }
-  
+  if (!userRows.length && req.user.role !== 'super_admin') return res.status(403).json({ error: 'Access denied' });
   const { plan_id } = req.body;
   const id = `sub_${uuidv4().replace(/-/g,'').slice(0,8)}`;
-  
-  // Get plan details
   const [planRows] = await pool.execute('SELECT * FROM plans WHERE id = ?', [plan_id]);
   if (!planRows.length) return res.status(404).json({ error: 'Plan not found' });
-  
-  const plan = planRows[0];
   const today = new Date();
-  
   await pool.execute(
     'INSERT INTO subscriptions (id, firm_id, plan_id, status, trial_start_date, trial_end_date, billing_cycle_start, billing_cycle_end, next_billing_date) VALUES (?,?,?,?,?,?,?,?,?)',
     [id, req.params.id, plan_id, 'trialing', today, new Date(today.getTime() + 30*24*60*60*1000), today, new Date(today.getTime() + 30*24*60*60*1000), new Date(today.getTime() + 30*24*60*60*1000)]
   );
-  
   await logAudit(req.user.id, req.user.name, 'CREATE', 'Subscriptions', `Created subscription for firm ${req.params.id}`);
   res.json({ id, message: 'Subscription created successfully' });
 });
@@ -836,31 +795,21 @@ app.post('/api/firms/:id/subscription', auth, async (req, res) => {
 // ============================================================
 
 app.get('/api/firms/:id/payments', auth, async (req, res) => {
-  // Check if user belongs to this firm
   const [userRows] = await pool.execute('SELECT id FROM users WHERE id = ? AND firm_id = ?', [req.user.id, req.params.id]);
-  if (!userRows.length && req.user.role !== 'super_admin') {
-    return res.status(403).json({ error: 'Access denied' });
-  }
-  
+  if (!userRows.length && req.user.role !== 'super_admin') return res.status(403).json({ error: 'Access denied' });
   const [rows] = await pool.execute('SELECT * FROM payments WHERE firm_id = ? ORDER BY created_at DESC', [req.params.id]);
   res.json(rows);
 });
 
 app.post('/api/firms/:id/payments', auth, async (req, res) => {
-  // Check if user belongs to this firm
   const [userRows] = await pool.execute('SELECT id FROM users WHERE id = ? AND firm_id = ?', [req.user.id, req.params.id]);
-  if (!userRows.length && req.user.role !== 'super_admin') {
-    return res.status(403).json({ error: 'Access denied' });
-  }
-  
+  if (!userRows.length && req.user.role !== 'super_admin') return res.status(403).json({ error: 'Access denied' });
   const { subscription_id, invoice_id, amount, payment_method, description } = req.body;
   const id = `pay_${uuidv4().replace(/-/g,'').slice(0,8)}`;
-  
   await pool.execute(
     'INSERT INTO payments (id, firm_id, subscription_id, invoice_id, amount, payment_method, description) VALUES (?,?,?,?,?,?,?)',
     [id, req.params.id, subscription_id || null, invoice_id || null, amount, payment_method || 'mpesa', description || '']
   );
-  
   await logAudit(req.user.id, req.user.name, 'CREATE', 'Payments', `Created payment of KES ${amount} for firm ${req.params.id}`);
   res.json({ id, message: 'Payment created successfully' });
 });
@@ -870,13 +819,9 @@ app.post('/api/firms/:id/payments', auth, async (req, res) => {
 // ============================================================
 
 app.get('/api/firms/:id/usage', auth, async (req, res) => {
-  // Check if user belongs to this firm
   const [userRows] = await pool.execute('SELECT id FROM users WHERE id = ? AND firm_id = ?', [req.user.id, req.params.id]);
-  if (!userRows.length && req.user.role !== 'super_admin') {
-    return res.status(403).json({ error: 'Access denied' });
-  }
-  
-  const currentPeriod = new Date().toISOString().slice(0, 7); // YYYY-MM format
+  if (!userRows.length && req.user.role !== 'super_admin') return res.status(403).json({ error: 'Access denied' });
+  const currentPeriod = new Date().toISOString().slice(0, 7);
   const [rows] = await pool.execute('SELECT * FROM usage_metrics WHERE firm_id = ? AND billing_period = ?', [req.params.id, currentPeriod]);
   res.json(rows);
 });
@@ -886,10 +831,7 @@ app.get('/api/firms/:id/usage', auth, async (req, res) => {
 // ============================================================
 
 app.get('/api/audit-logs', auth, async (req, res) => {
-  // Only super admin can access all audit logs
-  if (req.user.role !== 'super_admin') {
-    return res.status(403).json({ error: 'Access denied' });
-  }
+  if (req.user.role !== 'super_admin') return res.status(403).json({ error: 'Access denied' });
   const [rows] = await pool.execute('SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 200');
   res.json(rows.map(r => ({
     id: r.id.toString(), userId: r.user_id, userName: r.user_name,
@@ -899,11 +841,10 @@ app.get('/api/audit-logs', auth, async (req, res) => {
 });
 
 // ============================================================
-// MERCY CHAT PROXY (simple stub)
+// MERCY CHAT PROXY
 // ============================================================
 app.post('/api/mercy-chat', auth, async (req, res) => {
   const { message, history } = req.body;
-  // Basic placeholder response
   const reply = `Mercy says: I heard you say "${message}". (This AI feature is a stub.)`;
   res.json({ reply });
 });
