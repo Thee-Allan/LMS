@@ -10,7 +10,7 @@ const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const cors     = require('cors');
 const { v4: uuidv4 } = require('uuid');
-const nodemailer = require('nodemailer');
+const https = require('https');
 const multer   = require('multer');
 const { body, validationResult } = require('express-validator');
 
@@ -79,39 +79,65 @@ const ROLE_PERMISSIONS = {
 };
 
 // ── OTP & Email Helpers ───────────────────────────────────────
-const otpStore = new Map(); // email -> { otp, expires, userData }
-let transporter = null;
-
-if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-  transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: Number(process.env.EMAIL_PORT || 587),
-    secure: false, // 587 uses STARTTLS
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
-
-  transporter.verify((err) => {
-    if (err) console.log("❌ Email transporter verify failed:", err.message);
-    else console.log("✅ Email server ready — OTPs will be sent to real emails");
-  });
-} else {
-  console.log('⚠️  Email not configured; OTPs will be printed to the console.');
-}
+const otpStore = new Map();
 
 function sendOtpEmail(email, otp) {
-  if (transporter) {
-    transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: email,
-      subject: 'Your NLF Registration OTP',
-      text: `Your verification code is: ${otp}`
-    }).catch(e => console.log('Failed to send OTP email:', e));
-  } else {
-    console.log(`OTP for ${email}: ${otp}`);
+  const BREVO_API_KEY = process.env.BREVO_API_KEY;
+  const FROM_EMAIL = process.env.EMAIL_FROM || 'noreply@nanyukilaw.com';
+
+  if (!BREVO_API_KEY) {
+    console.log(`⚠️  No BREVO_API_KEY. OTP for ${email}: ${otp}`);
+    return;
   }
+
+  const payload = JSON.stringify({
+    sender: { name: 'Nanyuki Law Firm', email: FROM_EMAIL },
+    to: [{ email }],
+    subject: 'Your Nanyuki Law Firm Verification Code',
+    htmlContent: `
+      <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0f1729;border-radius:16px;border:1px solid #1e3a5f;">
+        <div style="text-align:center;margin-bottom:24px;">
+          <div style="display:inline-block;background:linear-gradient(135deg,#f59e0b,#d97706);padding:12px 20px;border-radius:12px;">
+            <span style="color:#000;font-weight:900;font-size:18px;letter-spacing:1px;">NLF</span>
+          </div>
+        </div>
+        <h2 style="color:#ffffff;text-align:center;margin:0 0 8px;">Verification Code</h2>
+        <p style="color:#94a3b8;text-align:center;margin:0 0 32px;font-size:14px;">Enter this code to complete your registration</p>
+        <div style="background:#1e3a5f;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px;">
+          <span style="font-size:40px;font-weight:900;letter-spacing:12px;color:#f59e0b;">${otp}</span>
+        </div>
+        <p style="color:#64748b;text-align:center;font-size:12px;">This code expires in 10 minutes. Do not share it with anyone.</p>
+        <p style="color:#64748b;text-align:center;font-size:12px;margin-top:8px;">Nanyuki Law Firm · Nanyuki Town, Laikipia County, Kenya</p>
+      </div>
+    `,
+  });
+
+  const options = {
+    hostname: 'api.brevo.com',
+    path: '/v3/smtp/email',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'api-key': BREVO_API_KEY,
+      'Content-Length': Buffer.byteLength(payload),
+    },
+  };
+
+  const req = https.request(options, (res) => {
+    let data = '';
+    res.on('data', chunk => data += chunk);
+    res.on('end', () => {
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        console.log(`✅ OTP email sent to ${email}`);
+      } else {
+        console.log(`❌ Brevo error ${res.statusCode}: ${data}`);
+      }
+    });
+  });
+
+  req.on('error', (e) => console.log('❌ Email error:', e.message));
+  req.write(payload);
+  req.end();
 }
 
 // ── Auth Middleware ───────────────────────────────────────────
