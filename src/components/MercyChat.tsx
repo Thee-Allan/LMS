@@ -92,29 +92,33 @@ const GUEST_PROMPTS = ['What services do you offer?', 'How do I hire a lawyer?',
 
 const getFallback = (q: string): string => {
   const t = q.toLowerCase();
-  if (t.includes('fee') || t.includes('cost') || t.includes('pay') || t.includes('price') || t.includes('charge'))
-    return '**Our Fees:**\n\n- Consultation: KES 5,000\n- Filing preparation: KES 15,000\n- Court fees: ~KES 8,500\n- Advocate rates: KES 8,000–15,000/hr\n\nPayment via **M-Pesa** or **Equity Bank** transfer.\n\nWould you like to book a consultation?';
+  if (t.includes('submit') || t.includes('my case') || t.includes('file a case') || t.includes('start a case') || t.includes('how do i') || t.includes('open a case'))
+    return '**How to Submit Your Case:**\n\n1. Click **"Submit a Case"** in your dashboard\n2. Describe your legal issue in plain language\n3. Upload your documents (ID, contracts, evidence)\n4. Select your preferred advocate\n5. Pick a consultation date\n6. Pay **KES 5,000** via M-Pesa\n7. Your advocate contacts you within **24 hours**\n\nWould you like to submit your case now?';
+  if (t.includes('fee') || t.includes('cost') || t.includes('pay') || t.includes('price') || t.includes('charge') || t.includes('mpesa') || t.includes('m-pesa'))
+    return '**Our Fees:**\n\n- Consultation: KES 5,000\n- Filing preparation: KES 15,000\n- Court fees: ~KES 8,500\n- Advocate rates: KES 8,000–15,000/hr\n\nPayment via **M-Pesa** (STK push) or **Equity Bank** transfer.\n\nWould you like to book a consultation?';
   if (t.includes('land') || t.includes('title') || t.includes('plot') || t.includes('property') || t.includes('elc'))
     return '**Land/Property Disputes (ELC):**\n\n1. Gather your title documents\n2. We draft the Plaint/Originating Summons\n3. Supporting Affidavit + title search\n4. Filed at Environment & Land Court\n5. Serve respondent and attend hearing\n\nGrace Wanjiku specialises in land law.\n\n**Would you like to submit your case?**';
   if (t.includes('divorce') || t.includes('custody') || t.includes('family') || t.includes('marriage') || t.includes('matrimonial'))
     return '**Family Law:**\n\nWe handle divorce, child custody, maintenance, matrimonial property, and adoption — filed at the High Court Family Division.\n\nGrace Wanjiku handles family matters with care and expertise.\n\nWould you like to book a consultation?';
-  if (t.includes('criminal') || t.includes('arrested') || t.includes('charge') || t.includes('bail') || t.includes('police') || t.includes('custody'))
+  if (t.includes('criminal') || t.includes('arrested') || t.includes('charge') || t.includes('bail') || t.includes('police'))
     return '**Criminal Defence — Act Immediately:**\n\n- Do NOT speak to police without a lawyer\n- We can apply for **bail immediately**\n- Peter Kamau is our criminal defence expert\n\nCall us now: **+254 700 100 000**\n\nWould you like to submit your case as urgent?';
   if (t.includes('employ') || t.includes('fired') || t.includes('terminat') || t.includes('dismiss') || t.includes('elrc'))
     return '**Wrongful Termination (ELRC):**\n\nYou have **3 years** to file at the Employment & Labour Relations Court.\n\nBring: Employment contract, termination letter, payslips.\n\nGrace Wanjiku handles employment matters.\n\n**Would you like to submit your case?**';
-  if (t.includes('register') || t.includes('account') || t.includes('sign up') || t.includes('start') || t.includes('join') || t.includes('create'))
+  if (t.includes('register') || t.includes('account') || t.includes('sign up') || t.includes('join') || t.includes('create'))
     return '**Getting Started:**\n\n1. Click **"Create Your Account"**\n2. Enter your name, email, phone\n3. Verify your email (OTP)\n4. Go to **"Submit a Case"**\n5. Follow the 5-step wizard\n6. Pay KES 5,000 via M-Pesa\n7. Advocate contacts you within **24 hours**\n\nReady to begin?';
   if (t.includes('contact') || t.includes('phone') || t.includes('location') || t.includes('where') || t.includes('address') || t.includes('email'))
     return '**Contact Nanyuki Law Firm:**\n\n📍 Nanyuki Town, Laikipia County, Kenya\n📞 +254 700 100 000\n✉️ info@nanyukilaw.com\n\n**Hours:** Mon–Fri 8AM–5PM | Sat 9AM–1PM\n\nOr use our **24/7 online portal**!';
-  if (t.includes('efiling') || t.includes('efile') || t.includes('judiciary') || t.includes('court portal'))
-    return '**Kenya Judiciary eFiling:**\n\nPortal: **efiling.court.go.ke**\n\nOur system prepares everything before filing:\n✅ Document checklist per case type\n✅ Auto-generate legal documents\n✅ Package all files ready for upload\n✅ Track case status after filing\n\nYour advocate then uploads to the Judiciary portal.';
-  if (t.includes('service') || t.includes('practice') || t.includes('area') || t.includes('speciali') || t.includes('what do you'))
+  if (t.includes('efiling') || t.includes('efile') || t.includes('judiciary') || t.includes('court portal') || t.includes('civil') || t.includes('procedure') || t.includes('filing'))
+    return '**Civil Case Filing Procedure (Kenya):**\n\n1. Draft Plaint\n2. Prepare Supporting Affidavit\n3. List of Witnesses\n4. List of Documents\n5. Verifying Affidavit\n6. File on **efiling.court.go.ke**\n7. Await court acceptance\n8. Schedule mention\n9. Serve defendant\n10. File Affidavit of Service\n\nOur system prepares steps 1–5 automatically. ✅\n\nWould you like to speak with one of our advocates?';
+  if (t.includes('service') || t.includes('practice') || t.includes('area') || t.includes('speciali') || t.includes('what do you') || t.includes('offer') || t.includes('lawyer') || t.includes('advocate') || t.includes('hire'))
     return '**Our 10 Practice Areas:**\n\n1. Commercial Law\n2. Criminal Defence\n3. Civil Litigation\n4. Land & Property (ELC)\n5. Family Law\n6. Employment Law (ELRC)\n7. Intellectual Property (KIPI)\n8. Tax Law\n9. Constitutional Law\n10. Environmental Law\n\nWhich applies to your situation?';
   if (t.includes('commercial') || t.includes('contract') || t.includes('business') || t.includes('company'))
     return '**Commercial Law:**\n\nWe handle business contracts, mergers, acquisitions, corporate compliance, shareholder disputes, and commercial litigation.\n\nPeter Kamau leads our commercial practice.\n\n**Would you like a consultation?**';
-  if (t.includes('how long') || t.includes('duration') || t.includes('time') || t.includes('when'))
-    return '**Case Duration (approximate):**\n\n- Consultation: Same day / 24–48 hours\n- Simple civil matters: 3–6 months\n- Land disputes: 6–18 months\n- Criminal cases: 2–12 months depending on severity\n- Employment claims: 4–12 months\n- Family/divorce: 3–9 months\n\nWe give you a realistic timeline at the first consultation.';
-  return 'I\'m Mercy, Nanyuki Law Firm\'s AI assistant. I can help with legal questions, our services, fees, and how to get started.\n\nCould you rephrase your question? Or call us directly: **+254 700 100 000**';
+  if (t.includes('how long') || t.includes('duration') || t.includes('long') || t.includes('when'))
+    return '**Case Duration (approximate):**\n\n- Consultation: Same day / 24–48 hours\n- Simple civil matters: 3–6 months\n- Land disputes: 6–18 months\n- Criminal cases: 2–12 months\n- Employment claims: 4–12 months\n- Family/divorce: 3–9 months\n\nWe give you a realistic timeline at the first consultation.';
+  if (t.includes('hello') || t.includes('hi') || t.includes('hii') || t.includes('hey') || t.includes('habari') || t.includes('mambo'))
+    return 'Hello! 👋 Welcome to Nanyuki Law Firm.\n\nI\'m Mercy, your AI Legal Assistant. I can help you with:\n\n- **Submitting your case**\n- **Our fees and payment**\n- **Legal procedures** in Kenya\n- **Finding the right advocate**\n- **Contact and location info**\n\nWhat do you need help with today?';
+  return '**Hello! I\'m Mercy** 👋\n\nI can help you with:\n\n- How to **submit your case**\n- Our **fees** and M-Pesa payment\n- **Legal procedures** in Kenya\n- Our **practice areas**\n- **Contact** information\n\nJust ask me anything or call: **+254 700 100 000**';
 };
 
 const MercyChat: React.FC<MercyChatProps> = ({ isOpen, onClose, guestMode = false }) => {
@@ -138,29 +142,17 @@ const MercyChat: React.FC<MercyChatProps> = ({ isOpen, onClose, guestMode = fals
     const userMessage = (text || input).trim();
     if (!userMessage || loading) return;
     setInput('');
-    const updatedMessages: Message[] = [...messages, { role: 'user', content: userMessage }];
-    setMessages(updatedMessages);
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setLoading(true);
     try {
-      const history = updatedMessages.slice(-14).map(m => ({ role: m.role, content: m.content }));
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      const history = messages.slice(-12).map(m => ({ role: m.role, content: m.content }));
+      const resp = await fetch('https://lms-loxl.onrender.com/api/mercy-chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': import.meta.env.VITE_ANTHROPIC_API_KEY || '',
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 1024,
-          system: MERCY_SYSTEM_PROMPT,
-          messages: history,
-        }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('nlf_token')}` },
+        body: JSON.stringify({ message: userMessage, history, systemPrompt: MERCY_SYSTEM_PROMPT }),
       });
       const data = await resp.json();
-      const reply = data?.content?.[0]?.text;
-      setMessages(prev => [...prev, { role: 'assistant', content: reply || getFallback(userMessage) }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: data?.reply || getFallback(userMessage) }]);
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: getFallback(userMessage) }]);
     } finally { setLoading(false); }
