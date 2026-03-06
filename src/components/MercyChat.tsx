@@ -138,17 +138,29 @@ const MercyChat: React.FC<MercyChatProps> = ({ isOpen, onClose, guestMode = fals
     const userMessage = (text || input).trim();
     if (!userMessage || loading) return;
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    const updatedMessages: Message[] = [...messages, { role: 'user', content: userMessage }];
+    setMessages(updatedMessages);
     setLoading(true);
     try {
-      const history = messages.slice(-12).map(m => ({ role: m.role, content: m.content }));
-      const resp = await fetch('https://lms-loxl.onrender.com/api/mercy-chat', {
+      const history = updatedMessages.slice(-14).map(m => ({ role: m.role, content: m.content }));
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('nlf_token')}` },
-        body: JSON.stringify({ message: userMessage, history, systemPrompt: MERCY_SYSTEM_PROMPT }),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': import.meta.env.VITE_ANTHROPIC_API_KEY || '',
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 1024,
+          system: MERCY_SYSTEM_PROMPT,
+          messages: history,
+        }),
       });
       const data = await resp.json();
-      setMessages(prev => [...prev, { role: 'assistant', content: data?.reply || getFallback(userMessage) }]);
+      const reply = data?.content?.[0]?.text;
+      setMessages(prev => [...prev, { role: 'assistant', content: reply || getFallback(userMessage) }]);
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: getFallback(userMessage) }]);
     } finally { setLoading(false); }
