@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import NotificationBell from './NotificationBell';
 import { useTheme } from '@/components/theme-provider';
 import {
   Search, Bell, Sun, Moon, Menu, X, ChevronDown, User, Settings, LogOut,
@@ -112,6 +113,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, onMercyOpen, setActiveModu
       {/* Right */}
       <div className="flex items-center gap-2">
         {/* Mercy AI */}
+        <NotificationBell />
         <button onClick={onMercyOpen} title="Ask Mercy AI"
           className="p-2 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-blue-400 transition-colors relative">
           <img src={MERCY_AVATAR} alt="Mercy" className="w-5 h-5 rounded-full object-cover" />

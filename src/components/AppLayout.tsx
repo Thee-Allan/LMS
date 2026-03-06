@@ -21,6 +21,10 @@ import ClientCaseSubmission from './ClientCaseSubmission';
 import WorkloadDashboard from './WorkloadDashboard';
 import PaymentsModule from './PaymentsModule';
 import MessagingModule from './MessagingModule';
+import NotificationBell from './NotificationBell';
+import DeadlineIntelligence from './DeadlineIntelligence';
+import DocumentVault from './DocumentVault';
+import ConflictChecker from './ConflictChecker';
 import '@/styles/theme.css';
 
 const AppLayout: React.FC = () => {
@@ -54,6 +58,9 @@ const AppLayout: React.FC = () => {
       case 'reports': return <ReportsModule />;
       case 'users': return <UsersModule />;
       case 'settings': return <SettingsModule />;
+      case 'deadlines': return <DeadlineIntelligence />;
+      case 'vault': return <DocumentVault />;
+      case 'conflict': return <ConflictChecker />;
       default: return <Dashboard setActiveModule={setActiveModule} />;
     }
   };

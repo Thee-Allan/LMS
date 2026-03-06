@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard, Users, Briefcase, CheckSquare, Calendar, FileText,
   Clock, Receipt, BarChart3, Settings, Shield, Scale, ChevronLeft,
-  ChevronRight, LogOut, X, MessageCircle
+  ChevronRight, LogOut, X, MessageCircle, Bell, Folder, AlertTriangle, Search
 } from 'lucide-react';
 
 interface SidebarProps {

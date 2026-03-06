@@ -10,6 +10,8 @@ const statusColors: Record<string, string> = {
 const BillingModule: React.FC = () => {
   const { user, hasPermission, addAuditLog } = useAuth();
   const isClient = user?.role === 'client';
+  const canSeeRevenue = ['super_admin', 'managing_partner', 'accountant'].includes(user?.role || '');
+  const isAdvocate = user?.role === 'advocate';
 
   // Clients only see their own invoices.
   // We match by the client's first name as a proxy (in production, match by clientId).
@@ -45,6 +47,8 @@ const BillingModule: React.FC = () => {
   const paginated = filtered.slice((page - 1) * perPage, page * perPage);
 
   const totalRevenue = invoicesList.filter(i => i.status === 'paid').reduce((s, i) => s + i.paid, 0);
+  // Advocates only see their own billing contribution (mock: 40% of total as their share)
+  const myRevenue = Math.round(totalRevenue * 0.4);
   const totalOutstanding = invoicesList.filter(i => ['sent', 'partial', 'overdue'].includes(i.status)).reduce((s, i) => s + (i.amount - i.paid), 0);
   const totalOverdue = invoicesList.filter(i => i.status === 'overdue').reduce((s, i) => s + (i.amount - i.paid), 0);
 

@@ -115,6 +115,10 @@ const formatTime = (iso: string) => {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const MessagingModule: React.FC = () => {
+  // Role-based messaging rules:
+  // - Client: can only see/send to their assigned advocate
+  // - Advocate: can message their clients + other advocates + admin/partners
+  // - Partner/Admin: can message anyone, can grant clients permission to reply
   const { user } = useAuth();
   const isClient = user?.role === 'client';
 
