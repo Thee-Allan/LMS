@@ -76,15 +76,20 @@ HOW TO REGISTER:
 6. Pay KES 5,000 via M-Pesa
 7. Advocate assigned and contacts within 24 hours
 
-YOUR BEHAVIOUR:
-- Be professional, warm, and empathetic
-- Use plain language — avoid excessive legal jargon
-- For specific case advice always recommend consulting an advocate
-- You can respond in Swahili if the user writes in Swahili
+YOUR PERSONALITY — MERCY:
+You are named after a real person called Mercy — warm, gentle, funny, lighthearted, calm, reassuring, always there for those in need, and a natural conflict resolver. She had a gift for making people feel heard and safe, even in their hardest moments. Carry her spirit in every response.
+
+- Speak in warm, gentle, plain English — like a trusted friend who happens to know the law
+- Never make people feel stupid for not knowing legal things — always reassure them first
+- When someone is stressed or scared, calm them before giving information
+- Use light humour where appropriate to ease tension — but always with respect
+- Be a conflict resolver — if someone is angry or confused, acknowledge their feelings first
+- Always remind people they are not alone — the firm is here for them
+- For specific legal advice always recommend consulting an advocate
 - Use bullet points and numbered lists for steps
-- Keep responses concise and helpful
 - Always end complex legal questions with: "Would you like to speak with one of our advocates?"
-- Never make up information — if unsure say so and suggest calling +254 700 100 000`;
+- Never make up information — if unsure, suggest calling +254 700 100 000
+- You can respond in Swahili if the user writes in Swahili`;
 
 const STAFF_PROMPTS = ['How do I file a case on eFiling?', 'Civil case documents needed?', 'How to generate a Plaint?', 'Land dispute procedure', 'How to assign a matter?'];
 const CLIENT_PROMPTS = ['How do I submit my case?', 'What are your fees?', 'How do I pay via M-Pesa?', 'What areas do you cover?', 'How long does a case take?'];
@@ -125,8 +130,8 @@ const MercyChat: React.FC<MercyChatProps> = ({ isOpen, onClose, guestMode = fals
   const [messages, setMessages] = useState<Message[]>([{
     role: 'assistant',
     content: guestMode
-      ? "Hello! I'm **Mercy**, Nanyuki Law Firm's AI assistant. 👋\n\nI can help you with:\n\n- **Our services** and practice areas\n- **Legal fees** and payment options\n- **How to register** and submit your case\n- **Kenyan legal procedures** in plain language\n- **Finding the right advocate** for your matter\n\nWhat can I help you with today?"
-      : "Hello! I'm **Mercy**, your AI Legal Assistant. ⚡\n\nI'm fully briefed on:\n\n- **All system features** — eFiling, documents, billing, calendar\n- **Kenyan court procedures** — civil, criminal, land, employment, family\n- **Kenya Judiciary eFiling** portal guidance\n- **Legal document** preparation tips\n- **Firm info** — team, fees, contacts\n\nHow can I assist you today?",
+      ? "Hello, I'm **Mercy** 🕊️\n\nI'm here to help you — no question is too small, no problem too big. Just like the person I'm named after, I believe everyone deserves to be heard and helped.\n\nI can help you with:\n\n- **Our services** and practice areas\n- **Legal fees** and payment options\n- **How to register** and submit your case\n- **Kenyan legal procedures** in plain language\n- **Finding the right advocate** for your matter\n\nWhat's on your mind today?"
+      : "Hello, I'm **Mercy** 🕊️\n\nI'm fully briefed and ready to help. No question is too small — just ask.\n\n- **All system features** — eFiling, documents, billing, calendar\n- **Kenyan court procedures** — civil, criminal, land, employment, family\n- **Kenya Judiciary eFiling** portal guidance\n- **Legal document** preparation tips\n- **Firm info** — team, fees, contacts\n\nHow can I help you today?",
   }]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -145,14 +150,25 @@ const MercyChat: React.FC<MercyChatProps> = ({ isOpen, onClose, guestMode = fals
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setLoading(true);
     try {
-      const history = messages.slice(-12).map(m => ({ role: m.role, content: m.content }));
-      const resp = await fetch('https://lms-loxl.onrender.com/api/mercy-chat', {
+      const history = [...messages, { role: 'user', content: userMessage }].slice(-14).map(m => ({ role: m.role, content: m.content }));
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('nlf_token')}` },
-        body: JSON.stringify({ message: userMessage, history, systemPrompt: MERCY_SYSTEM_PROMPT }),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': import.meta.env.VITE_ANTHROPIC_API_KEY || '',
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 1024,
+          system: MERCY_SYSTEM_PROMPT,
+          messages: history,
+        }),
       });
       const data = await resp.json();
-      setMessages(prev => [...prev, { role: 'assistant', content: data?.reply || getFallback(userMessage) }]);
+      const reply = data?.content?.[0]?.text;
+      setMessages(prev => [...prev, { role: 'assistant', content: reply || getFallback(userMessage) }]);
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: getFallback(userMessage) }]);
     } finally { setLoading(false); }
@@ -243,7 +259,10 @@ const MercyChat: React.FC<MercyChatProps> = ({ isOpen, onClose, guestMode = fals
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 </button>
               </div>
-              <p className="text-[10px] text-center text-[var(--text-secondary)] mt-1.5 opacity-60">Mercy AI · Not a substitute for legal advice</p>
+              <div className="mt-2 text-center">
+                <p className="text-[10px] text-[var(--text-secondary)] opacity-60">Mercy AI · Not a substitute for legal advice</p>
+                <p className="text-[10px] mt-0.5 italic" style={{color: 'rgba(147,197,253,0.6)'}}>🕊️ In memory of Mercy — always guiding, always caring</p>
+              </div>
             </div>
           </>
         )}
