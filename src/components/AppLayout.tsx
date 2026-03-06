@@ -20,6 +20,7 @@ import EFilingAssistant from './EFilingAssistant';
 import ClientCaseSubmission from './ClientCaseSubmission';
 import WorkloadDashboard from './WorkloadDashboard';
 import PaymentsModule from './PaymentsModule';
+import MessagingModule from './MessagingModule';
 import '@/styles/theme.css';
 
 const AppLayout: React.FC = () => {
@@ -44,6 +45,7 @@ const AppLayout: React.FC = () => {
       case 'submit_case': return <ClientCaseSubmission />;
       case 'workload': return <WorkloadDashboard />;
       case 'payments': return <PaymentsModule />;
+      case 'messages': return <MessagingModule />;
       case 'tasks': return <TasksModule />;
       case 'calendar': return <CalendarModule />;
       case 'documents': return <DocumentsModule />;

@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard, Users, Briefcase, CheckSquare, Calendar, FileText,
   Clock, Receipt, BarChart3, Settings, Shield, Scale, ChevronLeft,
-  ChevronRight, LogOut, X
+  ChevronRight, LogOut, X, MessageCircle
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -24,6 +24,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeModule, setActiveModule, collap
     { id: 'dashboard',    label: 'Dashboard',       icon: LayoutDashboard, perm: 'dashboard.view' },
     { id: 'submit_case',  label: 'Submit a Case',   icon: Briefcase,       perm: 'matters.view'   },
     { id: 'matters',      label: 'My Cases',        icon: Scale,           perm: 'matters.view'   },
+    { id: 'messages',     label: 'Messages',        icon: MessageCircle,   perm: 'matters.view'   },
     { id: 'documents',    label: 'Documents',       icon: FileText,        perm: 'documents.view' },
     { id: 'payments',     label: 'Payments',        icon: Receipt,         perm: 'billing.view'   },
   ];
@@ -35,6 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeModule, setActiveModule, collap
     { id: 'matters',     label: 'Matters/Cases',    icon: Briefcase,       perm: 'matters.view'   },
     { id: 'efiling',     label: 'eFiling Assistant',icon: Scale,           perm: 'matters.view'   },
     { id: 'submit_case', label: 'Case Submission',  icon: FileText,        perm: 'matters.view'   },
+    { id: 'messages',    label: 'Messages',         icon: MessageCircle,   perm: 'matters.view'   },
     { id: 'workload',    label: 'Workload',         icon: BarChart3,       perm: 'reports.view'   },
     { id: 'payments',    label: 'Payments',         icon: Receipt,         perm: 'billing.view'   },
     { id: 'tasks',       label: 'Tasks',            icon: CheckSquare,     perm: 'tasks.view'     },
