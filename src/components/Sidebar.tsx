@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard, Users, Briefcase, CheckSquare, Calendar, FileText,
   Clock, Receipt, BarChart3, Settings, Shield, Scale, ChevronLeft,
-  ChevronRight, LogOut, X, MessageCircle, Bell, Folder, AlertTriangle, Search
+  ChevronRight, LogOut, X, MessageCircle, Bell, Folder, AlertTriangle, Search, Calculator, UserCheck, ClipboardList, Shield as ShieldIcon
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -27,6 +27,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeModule, setActiveModule, collap
     { id: 'messages',     label: 'Messages',        icon: MessageCircle,   perm: 'matters.view'   },
     { id: 'documents',    label: 'Documents',       icon: FileText,        perm: 'documents.view' },
     { id: 'payments',     label: 'Payments',        icon: Receipt,         perm: 'billing.view'   },
+    { id: 'fees',        label: 'Fee Estimator',   icon: Calculator,      perm: 'billing.view'   },
   ];
 
   // Admin / Staff get the full menu

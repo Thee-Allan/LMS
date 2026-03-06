@@ -25,6 +25,10 @@ import NotificationBell from './NotificationBell';
 import DeadlineIntelligence from './DeadlineIntelligence';
 import DocumentVault from './DocumentVault';
 import ConflictChecker from './ConflictChecker';
+import ClientOnboarding from './ClientOnboarding';
+import CourtFeeEstimator from './CourtFeeEstimator';
+import AdvocateAssignment from './AdvocateAssignment';
+import AuditTrail from './AuditTrail';
 import '@/styles/theme.css';
 
 const AppLayout: React.FC = () => {
@@ -61,6 +65,10 @@ const AppLayout: React.FC = () => {
       case 'deadlines': return <DeadlineIntelligence />;
       case 'vault': return <DocumentVault />;
       case 'conflict': return <ConflictChecker />;
+      case 'onboarding': return <ClientOnboarding onNavigate={setActiveModule} />;
+      case 'fees': return <CourtFeeEstimator />;
+      case 'assignments': return <AdvocateAssignment />;
+      case 'audit': return <AuditTrail />;
       default: return <Dashboard setActiveModule={setActiveModule} />;
     }
   };
