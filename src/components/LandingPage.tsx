@@ -152,34 +152,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
           {/* Portal Preview Card */}
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-3xl blur-3xl" />
-            <div className="relative bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10 space-y-4">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
-                  <Scale className="w-4 h-4 text-black" />
-                </div>
-                <div>
-                  <p className="font-bold text-sm">Client Portal</p>
-                  <p className="text-[10px] text-gray-400">Your legal hub — 24/7</p>
-                </div>
-              </div>
-              {[
-                { icon: <Eye className="w-4 h-4 text-blue-400" />,         label: 'Track your cases in real-time' },
-                { icon: <FileText className="w-4 h-4 text-green-400" />,   label: 'Access and share documents securely' },
-                { icon: <MessageCircle className="w-4 h-4 text-purple-400" />, label: 'Chat directly with your advocate' },
-                { icon: <Phone className="w-4 h-4 text-yellow-400" />,     label: 'Pay fees via M-Pesa instantly' },
-                { icon: <Calendar className="w-4 h-4 text-red-400" />,    label: 'Get hearing date reminders' },
-                { icon: <Bot className="w-4 h-4 text-cyan-400" />,         label: 'Ask Mercy AI legal questions anytime' },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">
-                  {item.icon}
-                  <span className="text-sm text-gray-200">{item.label}</span>
-                  <CheckCircle className="w-3.5 h-3.5 text-green-400 ml-auto flex-shrink-0" />
-                </div>
-              ))}
-              <Button onClick={onEnterApp} className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold mt-2">
-                Create Free Account
-              </Button>
-            </div>
+
           </div>
         </div>
       </section>
@@ -425,9 +398,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
         <button onClick={() => setMercyOpen(true)}
           className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 rounded-full shadow-2xl font-semibold text-sm transition-all hover:scale-105 active:scale-95"
           style={{ background: 'linear-gradient(135deg,#1a237e,#1565c0)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)' }}>
-          <Bot className="w-4 h-4" />
+          <div className="relative">
+            <img src={MERCY_AVATAR} alt="Mercy" className="w-7 h-7 rounded-full object-cover border-2 border-white/30" />
+            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-400 border-2 border-blue-900 animate-pulse" />
+          </div>
           Ask Mercy AI
-          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
         </button>
       )}
 
