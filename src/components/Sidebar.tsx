@@ -19,27 +19,32 @@ const Sidebar: React.FC<SidebarProps> = ({ activeModule, setActiveModule, collap
   const { user, hasPermission, logout } = useAuth();
   const isClient = user?.role === 'client';
 
-  // Clients get a simplified 4-item menu
+  // Clients get a simplified menu
   const clientMenuItems = [
-    { id: 'dashboard',  label: 'Dashboard',      icon: LayoutDashboard, perm: 'dashboard.view' },
-    { id: 'matters',    label: 'Matters/Cases',  icon: Briefcase,       perm: 'matters.view'   },
-    { id: 'documents',  label: 'Documents',      icon: FileText,        perm: 'documents.view' },
-    { id: 'billing',    label: 'Billing',        icon: Receipt,         perm: 'billing.view'   },
+    { id: 'dashboard',    label: 'Dashboard',       icon: LayoutDashboard, perm: 'dashboard.view' },
+    { id: 'submit_case',  label: 'Submit a Case',   icon: Briefcase,       perm: 'matters.view'   },
+    { id: 'matters',      label: 'My Cases',        icon: Scale,           perm: 'matters.view'   },
+    { id: 'documents',    label: 'Documents',       icon: FileText,        perm: 'documents.view' },
+    { id: 'payments',     label: 'Payments',        icon: Receipt,         perm: 'billing.view'   },
   ];
 
   // Admin / Staff get the full menu
   const adminMenuItems = [
-    { id: 'dashboard', label: 'Dashboard',     icon: LayoutDashboard, perm: 'dashboard.view' },
-    { id: 'clients',   label: 'Clients',       icon: Users,           perm: 'clients.view'   },
-    { id: 'matters',   label: 'Matters/Cases', icon: Briefcase,       perm: 'matters.view'   },
-    { id: 'tasks',     label: 'Tasks',         icon: CheckSquare,     perm: 'tasks.view'     },
-    { id: 'calendar',  label: 'Calendar',      icon: Calendar,        perm: 'calendar.view'  },
-    { id: 'documents', label: 'Documents',     icon: FileText,        perm: 'documents.view' },
-    { id: 'time',      label: 'Time Tracking', icon: Clock,           perm: 'time.view'      },
-    { id: 'billing',   label: 'Billing',       icon: Receipt,         perm: 'billing.view'   },
-    { id: 'reports',   label: 'Reports',       icon: BarChart3,       perm: 'reports.view'   },
-    { id: 'users',     label: 'Users',         icon: Shield,          perm: 'users.view'     },
-    { id: 'settings',  label: 'Settings',      icon: Settings,        perm: 'settings.view'  },
+    { id: 'dashboard',   label: 'Dashboard',        icon: LayoutDashboard, perm: 'dashboard.view' },
+    { id: 'clients',     label: 'Clients',          icon: Users,           perm: 'clients.view'   },
+    { id: 'matters',     label: 'Matters/Cases',    icon: Briefcase,       perm: 'matters.view'   },
+    { id: 'efiling',     label: 'eFiling Assistant',icon: Scale,           perm: 'matters.view'   },
+    { id: 'submit_case', label: 'Case Submission',  icon: FileText,        perm: 'matters.view'   },
+    { id: 'workload',    label: 'Workload',         icon: BarChart3,       perm: 'reports.view'   },
+    { id: 'payments',    label: 'Payments',         icon: Receipt,         perm: 'billing.view'   },
+    { id: 'tasks',       label: 'Tasks',            icon: CheckSquare,     perm: 'tasks.view'     },
+    { id: 'calendar',    label: 'Calendar',         icon: Calendar,        perm: 'calendar.view'  },
+    { id: 'documents',   label: 'Documents',        icon: FileText,        perm: 'documents.view' },
+    { id: 'time',        label: 'Time Tracking',    icon: Clock,           perm: 'time.view'      },
+    { id: 'billing',     label: 'Billing',          icon: Receipt,         perm: 'billing.view'   },
+    { id: 'reports',     label: 'Reports',          icon: BarChart3,       perm: 'reports.view'   },
+    { id: 'users',       label: 'Users',            icon: Shield,          perm: 'users.view'     },
+    { id: 'settings',    label: 'Settings',         icon: Settings,        perm: 'settings.view'  },
   ];
 
   const menuItems = (isClient ? clientMenuItems : adminMenuItems).filter(item => hasPermission(item.perm));

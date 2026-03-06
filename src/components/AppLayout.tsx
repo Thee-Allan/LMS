@@ -16,6 +16,10 @@ import ReportsModule from './ReportsModule';
 import UsersModule from './UsersModule';
 import SettingsModule from './SettingsModule';
 import MercyChat from './MercyChat';
+import EFilingAssistant from './EFilingAssistant';
+import ClientCaseSubmission from './ClientCaseSubmission';
+import WorkloadDashboard from './WorkloadDashboard';
+import PaymentsModule from './PaymentsModule';
 import '@/styles/theme.css';
 
 const AppLayout: React.FC = () => {
@@ -36,6 +40,10 @@ const AppLayout: React.FC = () => {
       case 'dashboard': return <Dashboard setActiveModule={setActiveModule} />;
       case 'clients': return <ClientsModule />;
       case 'matters': return <MattersModule />;
+      case 'efiling': return <EFilingAssistant />;
+      case 'submit_case': return <ClientCaseSubmission />;
+      case 'workload': return <WorkloadDashboard />;
+      case 'payments': return <PaymentsModule />;
       case 'tasks': return <TasksModule />;
       case 'calendar': return <CalendarModule />;
       case 'documents': return <DocumentsModule />;
