@@ -197,6 +197,22 @@ function auth(req, res, next) {
   }
 }
 
+// ── Permission Middleware ─────────────────────────────────────
+function requirePermission(permission) {
+  return (req, res, next) => {
+    const userPerms = ROLE_PERMISSIONS[req.user?.role] || [];
+    if (userPerms.includes('*')) return next();
+    if (userPerms.includes(permission)) return next();
+    return res.status(403).json({ error: `Forbidden — requires: ${permission}` });
+  };
+}
+
+// Restricts clients to their own data by setting req.clientFilter
+function ownDataOnly(req, res, next) {
+  if (req.user?.role === 'client') req.clientFilter = req.user.id;
+  next();
+}
+
 // ── Helper ────────────────────────────────────────────────────
 async function logAudit(userId, userName, action, module, details) {
   try {
@@ -950,9 +966,41 @@ app.get('/api/audit-logs', auth, async (req, res) => {
 // MERCY CHAT PROXY
 // ============================================================
 app.post('/api/mercy-chat', auth, async (req, res) => {
-  const { message, history } = req.body;
-  const reply = `Mercy says: I heard you say "${message}". (This AI feature is a stub.)`;
-  res.json({ reply });
+  const { message, history = [] } = req.body;
+  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+
+  if (!ANTHROPIC_API_KEY) {
+    return res.json({ reply: 'Mercy AI is not configured yet. Please set ANTHROPIC_API_KEY in server/.env' });
+  }
+
+  try {
+    const messages = [
+      ...history.map(h => ({ role: h.role, content: h.content })),
+      { role: 'user', content: message }
+    ];
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        system: 'You are Mercy, a helpful AI assistant for Nanyuki Law Firm in Kenya. Help staff and clients with legal queries, case summaries, and firm workflows. Be concise, professional, and friendly.',
+        messages,
+      }),
+    });
+
+    const data = await response.json();
+    const reply = data.content?.[0]?.text || 'Sorry, I could not process that request.';
+    res.json({ reply });
+  } catch (err) {
+    console.error('Mercy AI error:', err);
+    res.status(500).json({ reply: 'Mercy AI is temporarily unavailable. Please try again.' });
+  }
 });
 
 // ============================================================

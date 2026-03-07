@@ -90,6 +90,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const result = await authApi.login(email, password) as { token: string; user: User };
       localStorage.setItem('nlf_token', result.token);
       setUser(result.user);
+      // Notify DataContext to re-fetch after login
+      window.dispatchEvent(new Event('nlf_auth_changed'));
       return true;
     } catch {
       return false;
