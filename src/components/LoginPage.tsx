@@ -35,20 +35,29 @@ const PhotoUploader: React.FC<PhotoUploaderProps> = ({ value, onChange, name }) 
     const reader = new FileReader();
     reader.onload = e => {
       const result = e.target?.result as string;
+      if (!result) return;
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
         const max = 400;
-        let w = img.width, h = img.height;
-        if (w > h) { if (w > max) { h = (h * max) / w; w = max; } }
-        else { if (h > max) { w = (w * max) / h; h = max; } }
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext('2d')!;
+        let w = img.naturalWidth || img.width;
+        let h = img.naturalHeight || img.height;
+        if (w === 0 || h === 0) { onChange(result); return; } // fallback: use original
+        if (w > max || h > max) {
+          if (w > h) { h = Math.round((h * max) / w); w = max; }
+          else { w = Math.round((w * max) / h); h = max; }
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { onChange(result); return; }
         ctx.drawImage(img, 0, 0, w, h);
-        onChange(canvas.toDataURL('image/jpeg', 0.85));
+        onChange(canvas.toDataURL('image/jpeg', 0.88));
       };
+      img.onerror = () => onChange(result); // fallback on error
       img.src = result;
     };
+    reader.onerror = () => setError('Failed to read file. Please try again.');
     reader.readAsDataURL(file);
   };
 
@@ -168,9 +177,13 @@ const PhotoUploader: React.FC<PhotoUploaderProps> = ({ value, onChange, name }) 
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp,image/gif,image/*"
         className="hidden"
-        onChange={e => { const f = e.target.files?.[0]; if (f) processFile(f); }}
+        onChange={e => {
+          const f = e.target.files?.[0];
+          if (f) processFile(f);
+          e.target.value = ''; // reset so same file can be picked again
+        }}
       />
     </div>
   );
