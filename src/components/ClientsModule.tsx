@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { clients as initialClients, Client } from '@/data/mockData';
-import { Plus, Search, Filter, Edit2, Trash2, Eye, X, Building2, User, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Filter, Edit2, Trash2, Eye, X, Building2, User, Download, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import { downloadClientPDF } from '@/lib/pdfGenerator';
 import AdminActions from './AdminActions';
 
 const ClientsModule: React.FC = () => {
@@ -70,6 +71,11 @@ const ClientsModule: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = 'clients.csv'; a.click();
     addAuditLog('EXPORT', 'Clients', 'Exported clients to CSV');
+  };
+
+  const handleDownloadClientPDF = async (c: Client) => {
+    addAuditLog('DOWNLOAD', 'Clients', `Downloaded profile PDF: ${c.name}`);
+    await downloadClientPDF(c);
   };
 
   return (
@@ -202,7 +208,13 @@ const ClientsModule: React.FC = () => {
           <div className="bg-[var(--card-bg)] rounded-xl w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-color)]">
               <h3 className="text-lg font-semibold text-[var(--text-primary)]">Client Details</h3>
-              <button onClick={() => setViewingClient(null)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><X className="w-5 h-5" /></button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => handleDownloadClientPDF(viewingClient)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-xs font-medium">
+                  <FileText className="w-3.5 h-3.5" /> Download PDF
+                </button>
+                <button onClick={() => setViewingClient(null)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><X className="w-5 h-5" /></button>
+              </div>
             </div>
             <div className="p-6 space-y-4">
               {[

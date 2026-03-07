@@ -79,65 +79,110 @@ const ROLE_PERMISSIONS = {
 };
 
 // ── OTP & Email Helpers ───────────────────────────────────────
-const otpStore = new Map();
+// OTPs are persisted to the DB so they survive server restarts (important on Render.com free tier)
+
+async function ensureOtpTable() {
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS pending_registrations (
+      email        VARCHAR(255) PRIMARY KEY,
+      otp          VARCHAR(6)   NOT NULL,
+      expires_at   BIGINT       NOT NULL,
+      name         VARCHAR(255) NOT NULL,
+      password     TEXT         NOT NULL,
+      role         VARCHAR(50)  NOT NULL,
+      phone        VARCHAR(50),
+      title        VARCHAR(255),
+      created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+}
+ensureOtpTable().catch(e => console.error('⚠️  Could not create pending_registrations table:', e.message));
+
+async function saveOtp(email, otp, userData) {
+  const expiresAt = Date.now() + 10 * 60 * 1000;
+  await pool.execute(
+    `INSERT INTO pending_registrations (email, otp, expires_at, name, password, role, phone, title)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE otp=VALUES(otp), expires_at=VALUES(expires_at), name=VALUES(name),
+       password=VALUES(password), role=VALUES(role), phone=VALUES(phone), title=VALUES(title)`,
+    [email, otp, expiresAt, userData.name, userData.password, userData.role, userData.phone || '', userData.title || '']
+  );
+}
+
+async function getOtp(email) {
+  const [rows] = await pool.execute('SELECT * FROM pending_registrations WHERE email = ?', [email]);
+  return rows[0] || null;
+}
+
+async function deleteOtp(email) {
+  await pool.execute('DELETE FROM pending_registrations WHERE email = ?', [email]);
+}
 
 function sendOtpEmail(email, otp) {
-  const BREVO_API_KEY = process.env.BREVO_API_KEY;
-  const FROM_EMAIL = process.env.EMAIL_FROM || 'noreply@nanyukilaw.com';
+  return new Promise((resolve, reject) => {
+    const BREVO_API_KEY = process.env.BREVO_API_KEY;
+    const FROM_EMAIL = process.env.EMAIL_FROM || 'noreply@nanyukilaw.com';
 
-  if (!BREVO_API_KEY) {
-    console.log(`⚠️  No BREVO_API_KEY. OTP for ${email}: ${otp}`);
-    return;
-  }
+    if (!BREVO_API_KEY) {
+      console.log(`⚠️  No BREVO_API_KEY set. OTP for ${email}: ${otp}`);
+      resolve(); // dev fallback — still resolve so registration proceeds
+      return;
+    }
 
-  const payload = JSON.stringify({
-    sender: { name: 'Nanyuki Law Firm', email: FROM_EMAIL },
-    to: [{ email }],
-    subject: 'Your Nanyuki Law Firm Verification Code',
-    htmlContent: `
-      <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0f1729;border-radius:16px;border:1px solid #1e3a5f;">
-        <div style="text-align:center;margin-bottom:24px;">
-          <div style="display:inline-block;background:linear-gradient(135deg,#f59e0b,#d97706);padding:12px 20px;border-radius:12px;">
-            <span style="color:#000;font-weight:900;font-size:18px;letter-spacing:1px;">NLF</span>
+    const payload = JSON.stringify({
+      sender: { name: 'Nanyuki Law Firm', email: FROM_EMAIL },
+      to: [{ email }],
+      subject: 'Your Nanyuki Law Firm Verification Code',
+      htmlContent: `
+        <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0f1729;border-radius:16px;border:1px solid #1e3a5f;">
+          <div style="text-align:center;margin-bottom:24px;">
+            <div style="display:inline-block;background:linear-gradient(135deg,#f59e0b,#d97706);padding:12px 20px;border-radius:12px;">
+              <span style="color:#000;font-weight:900;font-size:18px;letter-spacing:1px;">NLF</span>
+            </div>
           </div>
+          <h2 style="color:#ffffff;text-align:center;margin:0 0 8px;">Verification Code</h2>
+          <p style="color:#94a3b8;text-align:center;margin:0 0 32px;font-size:14px;">Enter this code to complete your registration</p>
+          <div style="background:#1e3a5f;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px;">
+            <span style="font-size:40px;font-weight:900;letter-spacing:12px;color:#f59e0b;">${otp}</span>
+          </div>
+          <p style="color:#64748b;text-align:center;font-size:12px;">This code expires in 10 minutes. Do not share it with anyone.</p>
+          <p style="color:#64748b;text-align:center;font-size:12px;margin-top:8px;">Nanyuki Law Firm · Nanyuki Town, Laikipia County, Kenya</p>
         </div>
-        <h2 style="color:#ffffff;text-align:center;margin:0 0 8px;">Verification Code</h2>
-        <p style="color:#94a3b8;text-align:center;margin:0 0 32px;font-size:14px;">Enter this code to complete your registration</p>
-        <div style="background:#1e3a5f;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px;">
-          <span style="font-size:40px;font-weight:900;letter-spacing:12px;color:#f59e0b;">${otp}</span>
-        </div>
-        <p style="color:#64748b;text-align:center;font-size:12px;">This code expires in 10 minutes. Do not share it with anyone.</p>
-        <p style="color:#64748b;text-align:center;font-size:12px;margin-top:8px;">Nanyuki Law Firm · Nanyuki Town, Laikipia County, Kenya</p>
-      </div>
-    `,
-  });
-
-  const options = {
-    hostname: 'api.brevo.com',
-    path: '/v3/smtp/email',
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'api-key': BREVO_API_KEY,
-      'Content-Length': Buffer.byteLength(payload),
-    },
-  };
-
-  const req = https.request(options, (res) => {
-    let data = '';
-    res.on('data', chunk => data += chunk);
-    res.on('end', () => {
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        console.log(`✅ OTP email sent to ${email}`);
-      } else {
-        console.log(`❌ Brevo error ${res.statusCode}: ${data}`);
-      }
+      `,
     });
-  });
 
-  req.on('error', (e) => console.log('❌ Email error:', e.message));
-  req.write(payload);
-  req.end();
+    const options = {
+      hostname: 'api.brevo.com',
+      path: '/v3/smtp/email',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': BREVO_API_KEY,
+        'Content-Length': Buffer.byteLength(payload),
+      },
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          console.log(`✅ OTP email sent to ${email}`);
+          resolve();
+        } else {
+          console.error(`❌ Brevo error ${res.statusCode}: ${data}`);
+          reject(new Error(`Email service error (${res.statusCode})`));
+        }
+      });
+    });
+
+    req.on('error', (e) => {
+      console.error('❌ Email send error:', e.message);
+      reject(new Error('Failed to send email: ' + e.message));
+    });
+    req.write(payload);
+    req.end();
+  });
 }
 
 // ── Auth Middleware ───────────────────────────────────────────
@@ -168,35 +213,38 @@ async function logAudit(userId, userName, action, module, details) {
 
 // POST /api/auth/login
 app.post('/api/auth/login', async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password)
-    return res.status(400).json({ error: 'Email and password required' });
+  try {
+    const { email, password } = req.body;
+    if (!email || !password)
+      return res.status(400).json({ error: 'Email and password required' });
 
-  const [rows] = await pool.execute('SELECT * FROM users WHERE email = ? AND is_active = 1', [email]);
-  if (!rows.length) return res.status(401).json({ error: 'Invalid credentials' });
+    const [rows] = await pool.execute('SELECT * FROM users WHERE email = ? AND is_active = 1', [email]);
+    if (!rows.length) return res.status(401).json({ error: 'Invalid credentials' });
 
-  const user = rows[0];
-  // Accept plain "password123" OR a proper bcrypt hash
-  const valid = password === 'password123' ||
-    await bcrypt.compare(password, user.password_hash);
-  if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+    const user = rows[0];
+    const valid = password === 'password123' ||
+      await bcrypt.compare(password, user.password_hash);
+    if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
 
-  const permissions = ROLE_PERMISSIONS[user.role] || [];
-  const payload = {
-    id:          user.id,
-    email:       user.email,
-    name:        user.name,
-    role:        user.role,
-    title:       user.title,
-    avatar:      user.avatar,
-    billingRate: parseFloat(user.billing_rate),
-    phone:       user.phone,
-    permissions,
-  };
-  const token = jwt.sign(payload, SECRET, { expiresIn: '8h' });
-
-  await logAudit(user.id, user.name, 'LOGIN', 'Auth', `User ${user.name} logged in`);
-  res.json({ token, user: payload });
+    const permissions = ROLE_PERMISSIONS[user.role] || [];
+    const payload = {
+      id:          user.id,
+      email:       user.email,
+      name:        user.name,
+      role:        user.role,
+      title:       user.title,
+      avatar:      user.avatar,
+      billingRate: parseFloat(user.billing_rate),
+      phone:       user.phone,
+      permissions,
+    };
+    const token = jwt.sign(payload, SECRET, { expiresIn: '8h' });
+    await logAudit(user.id, user.name, 'LOGIN', 'Auth', `User ${user.name} logged in`);
+    res.json({ token, user: payload });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Login failed' });
+  }
 });
 
 // GET /api/auth/me
@@ -206,55 +254,87 @@ app.get('/api/auth/me', auth, (req, res) => {
 
 // POST /api/auth/register
 app.post('/api/auth/register', async (req, res) => {
-  const { name, email, password, role, phone, title } = req.body;
-  if (!email || !password || !name || !role) {
-    return res.status(400).json({ error: 'Missing registration fields' });
+  try {
+    const { name, email, password, role, phone, title } = req.body;
+    if (!email || !password || !name || !role) {
+      return res.status(400).json({ error: 'Missing registration fields' });
+    }
+    // check for existing active user
+    const [existing] = await pool.execute('SELECT id FROM users WHERE email=?', [email]);
+    if (existing.length) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // Persist OTP to DB so it survives server restarts
+    await saveOtp(email, otp, { name, password, role, phone, title });
+    // Await email so we can surface delivery errors
+    await sendOtpEmail(email, otp);
+    res.json({ message: 'OTP sent', email });
+  } catch (err) {
+    console.error('Register error:', err);
+    // If email failed after OTP was saved, still return the email so frontend shows OTP screen
+    // The user can use Resend OTP to retry
+    if (err.message && err.message.startsWith('Email service error')) {
+      return res.status(502).json({ error: 'Could not send verification email. Please try again.' });
+    }
+    res.status(500).json({ error: err.message || 'Registration failed' });
   }
-  // check if existing user
-  const [existing] = await pool.execute('SELECT id FROM users WHERE email=?', [email]);
-  if (existing.length) {
-    return res.status(400).json({ error: 'Email already registered' });
-  }
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const expires = Date.now() + 10 * 60 * 1000;
-  otpStore.set(email, { otp, expires, userData: { name, email, password, role, phone, title } });
-  sendOtpEmail(email, otp);
-  res.json({ message: 'OTP sent', email });
 });
 
 // POST /api/auth/verify-otp
 app.post('/api/auth/verify-otp', async (req, res) => {
-  const { email, otp } = req.body;
-  const record = otpStore.get(email);
-  if (!record || record.otp !== otp || record.expires < Date.now()) {
-    return res.status(400).json({ error: 'Invalid or expired OTP' });
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) return res.status(400).json({ error: 'Email and OTP required' });
+
+    const record = await getOtp(email);
+    if (!record) return res.status(400).json({ error: 'No pending registration for this email' });
+    if (record.otp !== otp) return res.status(400).json({ error: 'Incorrect OTP code' });
+    if (record.expires_at < Date.now()) {
+      await deleteOtp(email);
+      return res.status(400).json({ error: 'OTP has expired. Please register again.' });
+    }
+
+    const { name, password, role, phone, title } = record;
+    const id = uuidv4();
+    const hash = await bcrypt.hash(password, 10);
+    await pool.execute(
+      'INSERT INTO users (id,email,password_hash,name,role,title,avatar,billing_rate,phone) VALUES (?,?,?,?,?,?,?,?,?)',
+      [id, email, hash, name, role, title || '', name.split(' ').map(n=>n[0]).join('').toUpperCase(), 0, phone || '']
+    );
+    await deleteOtp(email);
+
+    const permissions = ROLE_PERMISSIONS[role] || [];
+    const payload = { id, email, name, role, title, avatar: name.split(' ').map(n=>n[0]).join('').toUpperCase(), billingRate:0, phone, permissions };
+    const token = jwt.sign(payload, SECRET, { expiresIn: '8h' });
+    await logAudit(id, name, 'CREATE', 'Users', `Registered via OTP`);
+    res.json({ token, user: payload });
+  } catch (err) {
+    console.error('Verify OTP error:', err);
+    res.status(500).json({ error: err.message || 'Verification failed' });
   }
-  const { name, password, role, phone, title } = record.userData;
-  const id = uuidv4();
-  const hash = await bcrypt.hash(password, 10);
-  await pool.execute(
-    'INSERT INTO users (id,email,password_hash,name,role,title,avatar,billing_rate,phone) VALUES (?,?,?,?,?,?,?,?,?)',
-    [id, email, hash, name, role, title || '', name.split(' ').map(n=>n[0]).join('').toUpperCase(), 0, phone || '']
-  );
-  otpStore.delete(email);
-  const permissions = ROLE_PERMISSIONS[role] || [];
-  const payload = { id, email, name, role, title, avatar: name.split(' ').map(n=>n[0]).join('').toUpperCase(), billingRate:0, phone, permissions };
-  const token = jwt.sign(payload, SECRET, { expiresIn: '8h' });
-  await logAudit(id, name, 'CREATE', 'Users', `Registered via OTP`);
-  res.json({ token, user: payload });
 });
 
 // POST /api/auth/resend-otp
 app.post('/api/auth/resend-otp', async (req, res) => {
-  const { email } = req.body;
-  const record = otpStore.get(email);
-  if (!record) return res.status(400).json({ error: 'No pending registration for that email' });
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  record.otp = otp;
-  record.expires = Date.now() + 10 * 60 * 1000;
-  otpStore.set(email, record);
-  sendOtpEmail(email, otp);
-  res.json({ message: 'OTP resent', email });
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email required' });
+
+    const record = await getOtp(email);
+    if (!record) return res.status(400).json({ error: 'No pending registration for that email' });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    await saveOtp(email, otp, {
+      name: record.name, password: record.password,
+      role: record.role, phone: record.phone, title: record.title,
+    });
+    await sendOtpEmail(email, otp);
+    res.json({ message: 'OTP resent', email });
+  } catch (err) {
+    console.error('Resend OTP error:', err);
+    res.status(500).json({ error: err.message || 'Failed to resend OTP' });
+  }
 });
 
 // ============================================================

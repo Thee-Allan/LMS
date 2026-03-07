@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { matters, clients, invoices, timeEntries, tasks } from '@/data/mockData';
 import { BarChart3, TrendingUp, Users, Briefcase, Download, FileText } from 'lucide-react';
+import { downloadReportPDF } from '@/lib/pdfGenerator';
 
 const ReportsModule: React.FC = () => {
   const [activeReport, setActiveReport] = useState('overview');
@@ -34,14 +35,18 @@ const ReportsModule: React.FC = () => {
     { id: 'advocates', label: 'Advocates', icon: Users },
   ];
 
-  const exportReport = () => {
-    const data = activeReport === 'matters'
-      ? 'Practice Area,Count,Value\n' + mattersByArea.map(m => `"${m.area}","${m.count}","${m.value}"`).join('\n')
+  const exportReport = async () => {
+    const reportTitles: Record<string,string> = { overview: 'Overview Report', matters: 'Matters Report', revenue: 'Revenue Report', advocates: 'Advocates Report' };
+    const sections = activeReport === 'matters'
+      ? [{ heading: 'Matters by Practice Area', rows: mattersByArea.map(m => [`${m.area}`, `${m.count} matters  |  KES ${m.value.toLocaleString()}`] as [string,string]) }]
       : activeReport === 'revenue'
-      ? 'Month,Revenue,Collected\n' + revenueByMonth.map(r => `"${r.month}","${r.revenue}","${r.collected}"`).join('\n')
-      : 'Advocate,Matters,Hours,Revenue\n' + advocatePerformance.map(a => `"${a.name}","${a.matters}","${a.hours}","${a.revenue}"`).join('\n');
-    const blob = new Blob([data], { type: 'text/csv' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `report-${activeReport}.csv`; a.click();
+      ? [{ heading: 'Monthly Revenue', rows: revenueByMonth.map(r => [`${r.month}`, `Revenue: KES ${r.revenue.toLocaleString()}  |  Collected: KES ${r.collected.toLocaleString()}`] as [string,string]) }]
+      : activeReport === 'advocates'
+      ? [{ heading: 'Advocate Performance', rows: advocatePerformance.map(a => [a.name, `${a.matters} matters  |  ${a.hours}h  |  KES ${a.revenue.toLocaleString()}`] as [string,string]) }]
+      : [
+          { heading: 'Key Metrics', rows: [['Total Matters', String(matters.length)], ['Active Clients', String(clients.filter(c=>c.status==='active').length)], ['Total Invoiced', 'KES ' + (invoices.reduce((s,i)=>s+i.amount,0)/1000000).toFixed(1)+'M'], ['Collected', 'KES ' + (invoices.reduce((s,i)=>s+i.paid,0)/1000000).toFixed(1)+'M']] as [string,string][] }
+        ];
+    await downloadReportPDF({ title: reportTitles[activeReport] || activeReport, sections });
   };
 
   const statusColors: Record<string, string> = { consultation: '#6b7280', active: '#3b82f6', court: '#ef4444', settled: '#10b981', closed: '#8b5cf6' };
@@ -53,8 +58,8 @@ const ReportsModule: React.FC = () => {
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">Reports & Analytics</h1>
           <p className="text-sm text-[var(--text-secondary)]">Firm performance insights</p>
         </div>
-        <button onClick={exportReport} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] text-sm">
-          <Download className="w-4 h-4" /> Export CSV
+        <button onClick={exportReport} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium">
+          <FileText className="w-4 h-4" /> Export PDF
         </button>
       </div>
 

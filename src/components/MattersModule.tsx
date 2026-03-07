@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { matters as initialMatters, Matter, practiceAreas, courts, clients } from '@/data/mockData';
-import { Plus, Search, Edit2, Trash2, Eye, X, Download, ChevronLeft, ChevronRight, Briefcase, AlertCircle } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Eye, X, Download, ChevronLeft, ChevronRight, Briefcase, AlertCircle, FileText } from 'lucide-react';
+import { downloadMatterPDF } from '@/lib/pdfGenerator';
 import AdminActions from './AdminActions';
 
 const statusColors: Record<string, string> = {
@@ -229,7 +230,13 @@ const MattersModule: React.FC = () => {
                 <h3 className="text-lg font-semibold text-[var(--text-primary)]">{viewingMatter.matterNumber}</h3>
                 <p className="text-sm text-[var(--text-secondary)]">{viewingMatter.title}</p>
               </div>
-              <button onClick={() => setViewingMatter(null)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><X className="w-5 h-5" /></button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => downloadMatterPDF(viewingMatter)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-xs font-medium">
+                  <FileText className="w-3.5 h-3.5" /> Download PDF
+                </button>
+                <button onClick={() => setViewingMatter(null)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><X className="w-5 h-5" /></button>
+              </div>
             </div>
             <div className="p-6 grid grid-cols-2 gap-4">
               {[

@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { invoices as initialInvoices, Invoice, matters, clients } from '@/data/mockData';
-import { Plus, Search, Eye, X, Download, ChevronLeft, ChevronRight, Receipt, DollarSign, AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
+import { Plus, Search, Eye, X, Download, ChevronLeft, ChevronRight, Receipt, DollarSign, AlertTriangle, CheckCircle2, Clock, Upload, FileText } from 'lucide-react';
+import { downloadInvoicePDF } from '@/lib/pdfGenerator';
 
 const statusColors: Record<string, string> = {
   draft: '#6b7280', sent: '#3b82f6', partial: '#f59e0b', paid: '#10b981', overdue: '#ef4444', cancelled: '#9ca3af',
@@ -101,6 +102,11 @@ const BillingModule: React.FC = () => {
     const blob = new Blob([headers + rows], { type: 'text/csv' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'invoices.csv'; a.click();
     addAuditLog('EXPORT', 'Billing', 'Exported invoices to CSV');
+  };
+
+  const handleDownloadInvoicePDF = async (inv: Invoice) => {
+    addAuditLog('DOWNLOAD', 'Billing', `Downloaded PDF: ${inv.invoiceNumber}`);
+    await downloadInvoicePDF(inv);
   };
 
   return (
@@ -228,7 +234,13 @@ const BillingModule: React.FC = () => {
                 <h3 className="text-lg font-semibold text-[var(--text-primary)]">{viewingInvoice.invoiceNumber}</h3>
                 <p className="text-sm text-[var(--text-secondary)]">{viewingInvoice.clientName}</p>
               </div>
-              <button onClick={() => setViewingInvoice(null)} className="text-[var(--text-secondary)]"><X className="w-5 h-5" /></button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => handleDownloadInvoicePDF(viewingInvoice)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-xs font-medium">
+                  <FileText className="w-3.5 h-3.5" /> Download PDF
+                </button>
+                <button onClick={() => setViewingInvoice(null)} className="text-[var(--text-secondary)]"><X className="w-5 h-5" /></button>
+              </div>
             </div>
             <div className="p-6">
               <div className="grid grid-cols-2 gap-4 mb-6">
