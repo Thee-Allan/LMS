@@ -79,7 +79,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeModule, setActiveModule, collap
         ${collapsed ? 'w-20' : 'w-64'}
         bg-[var(--sidebar-bg)] border-r border-[var(--border-color)]`}
       >
-        {/* Logo */}
+        {/* Logo + Collapse Button */}
         <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} p-4 border-b border-[var(--border-color)]`}>
           {!collapsed && (
             <div className="flex items-center gap-3">
@@ -99,9 +99,17 @@ const Sidebar: React.FC<SidebarProps> = ({ activeModule, setActiveModule, collap
               <Scale className="w-5 h-5 text-gray-900" />
             </div>
           )}
-          <button onClick={() => setMobileOpen(false)} className="lg:hidden text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            {/* Desktop collapse toggle — now at the TOP, always visible */}
+            <button onClick={() => setCollapsed(!collapsed)}
+              className="hidden lg:flex items-center justify-center w-8 h-8 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] hover:text-[var(--text-primary)] transition-all"
+              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+              {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </button>
+            <button onClick={() => setMobileOpen(false)} className="lg:hidden text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Navigation */}
@@ -145,10 +153,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeModule, setActiveModule, collap
               title="Logout">
               <LogOut className="w-4 h-4" />
               {!collapsed && <span>Logout</span>}
-            </button>
-            <button onClick={() => setCollapsed(!collapsed)}
-              className="hidden lg:flex items-center justify-center w-8 h-8 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] transition-all">
-              {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
             </button>
           </div>
         </div>

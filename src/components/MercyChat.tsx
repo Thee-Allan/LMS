@@ -152,24 +152,22 @@ const MercyChat: React.FC<MercyChatProps> = ({ isOpen, onClose, guestMode = fals
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setLoading(true);
     try {
-      const history = [...messages, { role: 'user', content: userMessage }].slice(-14).map(m => ({ role: m.role, content: m.content }));
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      const history = [...messages, { role: 'user', content: userMessage }].slice(-14);
+      // Issue 11 FIX: Call our backend proxy — never expose API key in browser
+      const token = localStorage.getItem('nlf_token');
+      const resp = await fetch('/api/mercy-chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': import.meta.env.VITE_ANTHROPIC_API_KEY || '',
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 1024,
-          system: MERCY_SYSTEM_PROMPT,
-          messages: history,
+          messages: history.map(m => ({ role: m.role, content: m.content })),
+          systemPrompt: MERCY_SYSTEM_PROMPT,
         }),
       });
       const data = await resp.json();
-      const reply = data?.content?.[0]?.text;
+      const reply = data?.reply;
       setMessages(prev => [...prev, { role: 'assistant', content: reply || getFallback(userMessage) }]);
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: getFallback(userMessage) }]);

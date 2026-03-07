@@ -126,18 +126,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-yellow-400/30 text-yellow-400 text-xs font-medium bg-yellow-400/5">
               <Award className="w-3.5 h-3.5" /> 18+ Years of Legal Excellence in Kenya
             </div>
-            <h1 className="text-5xl lg:text-6xl font-bold leading-tight">
+            <h1 className="text-5xl lg:text-6xl font-bold leading-tight font-display">
               Justice Begins
               <span className="block bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">With Us</span>
             </h1>
             <p className="text-lg text-gray-300 leading-relaxed max-w-lg">
               Nanyuki Law Firm — trusted by hundreds across Kenya for land disputes, criminal defence, commercial law, family matters, and more.
             </p>
-            <div className="grid grid-cols-3 gap-6">
-              {[['500+','Cases Handled'],['200+','Happy Clients'],['98%','Success Rate']].map(([v,l]) => (
-                <div key={l}><p className="text-3xl font-bold text-yellow-400">{v}</p><p className="text-xs text-gray-400 mt-0.5">{l}</p></div>
-              ))}
-            </div>
             <div className="flex flex-col sm:flex-row gap-3">
               <Button onClick={onEnterApp} className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-base py-5 px-7 hover:opacity-90 font-bold">
                 Submit Your Case →
@@ -150,14 +145,59 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
           </div>
 
           {/* Portal Preview Card */}
-          <div className="relative">
+          <div className="relative hidden lg:block">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-3xl blur-3xl" />
-
+            <div className="relative bg-slate-800/80 border border-white/10 rounded-2xl p-6 backdrop-blur-sm shadow-2xl">
+              {/* Mock portal header */}
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-3 h-3 rounded-full bg-red-500" />
+                <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                <div className="w-3 h-3 rounded-full bg-green-500" />
+                <span className="ml-2 text-xs text-gray-400">Client Portal — Dashboard</span>
+              </div>
+              {/* Stats preview */}
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {[
+                  { label: 'My Matters', value: '3', color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' },
+                  { label: 'Next Hearing', value: 'Jan 24', color: '#a855f7', bg: 'rgba(168,85,247,0.12)' },
+                  { label: 'Documents', value: '12', color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
+                  { label: 'Outstanding', value: 'KES 0', color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
+                ].map(s => (
+                  <div key={s.label} className="rounded-xl p-3" style={{ backgroundColor: s.bg }}>
+                    <p className="text-xs text-gray-400">{s.label}</p>
+                    <p className="text-lg font-bold mt-0.5" style={{ color: s.color }}>{s.value}</p>
+                  </div>
+                ))}
+              </div>
+              {/* Case list preview */}
+              <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider font-medium">Active Cases</p>
+              {[
+                { title: 'Land Dispute — Plot 45', status: 'In Court', dot: '#ef4444' },
+                { title: 'Employment Claim', status: 'Active', dot: '#3b82f6' },
+                { title: 'Commercial Agreement', status: 'Settled', dot: '#10b981' },
+              ].map(c => (
+                <div key={c.title} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c.dot }} />
+                    <span className="text-xs text-gray-300">{c.title}</span>
+                  </div>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/5 text-gray-400">{c.status}</span>
+                </div>
+              ))}
+              <div className="mt-4 flex gap-2">
+                <div className="flex-1 h-8 rounded-lg bg-gradient-to-r from-yellow-400 to-orange-500 flex items-center justify-center">
+                  <span className="text-xs font-bold text-black">Submit New Case</span>
+                </div>
+                <div className="h-8 w-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                  <span className="text-blue-400 text-xs">✉</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Stats Band */}
+      {/* Stats Band — single authoritative location (removed duplicate from hero above) */}
       <section className="py-8 bg-gradient-to-r from-yellow-400 to-orange-500 text-black">
         <div className="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           {[['500+','Cases Handled'],['18+','Years Experience'],['10','Practice Areas'],['98%','Client Satisfaction']].map(([v,l]) => (
@@ -171,7 +211,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <p className="text-yellow-400 text-sm font-semibold tracking-widest mb-2">EXPLORE THE FIRM</p>
-            <h2 className="text-4xl font-bold">Everything You Need to Know</h2>
+            <h2 className="text-4xl font-bold font-display">Everything You Need to Know</h2>
             <p className="text-gray-400 mt-3">Browse freely — no account required</p>
           </div>
 
@@ -194,7 +234,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
           {tab === 'about' && (
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div className="space-y-6">
-                <h3 className="text-3xl font-bold">Kenya's Trusted Legal Partners</h3>
+                <h3 className="text-3xl font-bold font-display">Kenya's Trusted Legal Partners</h3>
                 <p className="text-gray-300 leading-relaxed">Established in Nanyuki Town, Laikipia County, Nanyuki Law Firm has been the go-to legal practice for individuals, businesses, and government bodies across Central Kenya for 18+ years.</p>
                 <p className="text-gray-300 leading-relaxed">We combine deep knowledge of Kenyan law with modern technology — giving clients real-time case updates, secure document sharing, and direct advocate communication through our digital portal.</p>
                 <div className="space-y-3">
@@ -314,7 +354,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <p className="text-yellow-400 text-sm font-semibold tracking-widest mb-2">CLIENT VOICES</p>
-            <h2 className="text-4xl font-bold">What Our Clients Say</h2>
+            <h2 className="text-4xl font-bold font-display">What Our Clients Say</h2>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {TESTIMONIALS.map((t, i) => (
@@ -388,7 +428,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
           </div>
           <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-500">
             <p>© 2026 Nanyuki Law Firm. All rights reserved. Licensed by the Law Society of Kenya.</p>
-            <p>Powered by <span className="text-yellow-400">LexKenya</span> Law Firm OS</p>
+            <p>Built for Nanyuki Law Firm · <span className="text-yellow-400">Nanyuki, Laikipia County, Kenya</span></p>
           </div>
         </div>
       </footer>

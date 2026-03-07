@@ -1,9 +1,10 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { matters, clients, invoices, tasks, calendarEvents, timeEntries } from '@/data/mockData';
+import { useData } from '@/contexts/DataContext';
 import {
   Briefcase, Users, Receipt, Clock, TrendingUp, AlertTriangle, Calendar,
-  CheckSquare, ArrowUpRight, ArrowDownRight, FileText, Scale
+  CheckSquare, ArrowUpRight, ArrowDownRight, FileText, Scale,
+  Loader2, ServerCrash, CalendarX, InboxIcon
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -12,7 +13,31 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ setActiveModule }) => {
   const { user, hasPermission } = useAuth();
+  const { matters: rawMatters, clients: rawClients, invoices: rawInvoices, tasks: rawTasks, events: rawEvents, timeEntries: rawTimeEntries, loading, error } = useData();
   const isClient = user?.role === 'client';
+
+  // Cast to typed arrays
+  const matters = rawMatters as { id: string; matterNumber: string; title: string; clientId: string; clientName: string; practiceArea: string; status: string; assignedAdvocate: string; court: string; nextHearing: string; value: number }[];
+  const clients = rawClients as { id: string; name: string; type: string; email: string; phone: string; status: string; mattersCount: number }[];
+  const invoices = rawInvoices as { id: string; invoiceNumber: string; clientId: string; clientName: string; matterNumber: string; amount: number; paid: number; status: string; dueDate: string }[];
+  const tasks = rawTasks as { id: string; title: string; matterId: string; assignedTo: string; priority: string; status: string; dueDate: string }[];
+  const calendarEvents = rawEvents as { id: string; title: string; type: string; date: string; time: string; location: string; matterId: string }[];
+  const timeEntries = rawTimeEntries as { id: string; matterId: string; userId: string; hours: number; billable: boolean; rate: number; status: string }[];
+
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-24 gap-4">
+      <Loader2 className="w-10 h-10 text-blue-400 animate-spin" />
+      <p className="text-[var(--text-secondary)] text-sm">Loading dashboard data…</p>
+    </div>
+  );
+
+  if (error) return (
+    <div className="flex flex-col items-center justify-center py-24 gap-4">
+      <ServerCrash className="w-12 h-12 text-red-400" />
+      <p className="text-red-400 font-semibold">Could not load data</p>
+      <p className="text-[var(--text-secondary)] text-sm">{error}</p>
+    </div>
+  );
 
   // ── Admin/Staff stats ──────────────────────────────────────────────────────
   const activeMatterCount = matters.filter(m => ['active', 'court', 'consultation'].includes(m.status)).length;
@@ -50,10 +75,12 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveModule }) => {
   // CLIENT DASHBOARD
   // ══════════════════════════════════════════════════════════════════════════
   if (isClient) {
-    // Simulate client-specific data (in production these would be filtered by clientId)
-    const myMatters = matters.slice(0, 5);
-    const myInvoices = invoices.slice(0, 4);
-    const myEvents = upcomingEvents.slice(0, 5);
+    // FIX: filter by the authenticated client's ID, not slice
+    const myMatters = matters.filter(m => m.clientId === user?.id);
+    const myInvoices = invoices.filter(inv => inv.clientId === user?.id);
+    const myEvents = upcomingEvents.filter(e =>
+      myMatters.some(m => m.id === e.matterId)
+    ).slice(0, 5);
     const myDocs = 4; // placeholder
     const myMessages = 2;
     const unreadMessages = 0;
@@ -224,7 +251,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveModule }) => {
                   </div>
                 </div>
               )) : (
-                <p className="text-sm text-[var(--text-secondary)] text-center py-4">No invoices found</p>
+                <p className="text-sm text-[var(--text-secondary)] text-center py-4 flex flex-col items-center gap-2"><InboxIcon className="w-8 h-8 opacity-30" />No invoices found</p>
               )}
             </div>
           </div>
@@ -410,7 +437,10 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveModule }) => {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-[var(--text-secondary)] text-center py-4">No overdue invoices</p>
+              <div className="flex flex-col items-center gap-2 py-6 text-[var(--text-secondary)]">
+                <InboxIcon className="w-8 h-8 opacity-30" />
+                <p className="text-sm">No overdue invoices — all clear!</p>
+              </div>
             )}
           </div>
         )}
